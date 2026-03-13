@@ -434,8 +434,8 @@ class GameScene: SKScene {
             nextScene = GameScene(size: size)
         }
         
-        nextScene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        nextScene.scaleMode = scaleMode
+//        nextScene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        nextScene.scaleMode = self.scaleMode
         view.presentScene(nextScene, transition: .fade(withDuration: 0.4))
     }
 
