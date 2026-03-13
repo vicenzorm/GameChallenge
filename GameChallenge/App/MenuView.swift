@@ -13,9 +13,9 @@ struct MenuView: UIViewRepresentable {
         let view = SKView()
         view.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         view.ignoresSiblingOrder = true
-//        let scene = MenuScene(size: view.bounds.size)
-//        scene.scaleMode = .aspectFill
-//        view.presentScene(scene)
+        let scene = MenuScene(size: view.bounds.size)
+        scene.scaleMode = .aspectFill
+        view.presentScene(scene)
         return view
     }
 
