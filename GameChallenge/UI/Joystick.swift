@@ -8,8 +8,8 @@
 import SpriteKit
 
 class Joystick: SKNode {
-    private let baseNode: SKSpriteNode
-    private let stickNode: SKSpriteNode
+    private let baseNode: SKShapeNode
+    private let stickNode: SKShapeNode
     private let radius: CGFloat = 50
     
     private var trackingTouch: UITouch?
@@ -19,12 +19,16 @@ class Joystick: SKNode {
     
     override init() {
         // Create base
-        baseNode = SKSpriteNode(color: UIColor(white: 0.3, alpha: 0.5), size: CGSize(width: 100, height: 100))
+        baseNode = SKShapeNode(circleOfRadius: radius)
         baseNode.name = "joystickBase"
-        
+        baseNode.fillColor = UIColor(white: 0.3, alpha: 0.5)
+        baseNode.strokeColor = UIColor.clear
+                
         // Create stick
-        stickNode = SKSpriteNode(color: UIColor(white: 0.8, alpha: 0.8), size: CGSize(width: 50, height: 50))
+        stickNode = SKShapeNode(circleOfRadius: radius * 0.5) // 25 de raio
         stickNode.name = "joystickStick"
+        stickNode.fillColor = UIColor(white: 0.8, alpha: 0.8)
+        stickNode.strokeColor = UIColor.clear
         
         super.init()
         
