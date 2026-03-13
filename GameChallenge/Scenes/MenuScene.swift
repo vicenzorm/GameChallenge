@@ -80,7 +80,15 @@ class MenuScene: SKScene {
             if let name = touchedNode.name {
                 switch name {
                 case "playButton":
-                    print("hahha")
+                    
+                    let gameScene = GameScene(size: self.size)
+                    gameScene.scaleMode = self.scaleMode
+                    self.run(specialSequence) {
+                        self.view?.presentScene(gameScene)
+                    }
+                
+                    
+                    
                 case "infoButton":
                     print("hahha")
                 default:
