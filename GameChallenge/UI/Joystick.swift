@@ -12,6 +12,8 @@ class Joystick: SKNode {
     private let stickNode: SKSpriteNode
     private let radius: CGFloat = 50
     
+    private var trackingTouch: UITouch?
+    
     var velocity: CGPoint = .zero
     var isTouching = false
     
@@ -46,29 +48,36 @@ class Joystick: SKNode {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
+        if trackingTouch != nil { return }
         
-        // Check if touch is within base area (with some extra margin)
-        let distance = hypot(location.x, location.y)
-        if distance <= radius + 30 {
-            isTouching = true
-            updateStickPosition(with: location)
+        for touch in touches {
+            let location = touch.location(in: self)
+            let distance = hypot(location.x, location.y)
+            if distance <= radius + 30 {
+                trackingTouch = touch
+                isTouching = true
+                updateStickPosition(with: location)
+                break
+            }
         }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard isTouching, let touch = touches.first else { return }
+        guard isTouching, let touch = trackingTouch, touches.contains(touch) else { return }
         let location = touch.location(in: self)
         updateStickPosition(with: location)
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        resetJoystick()
+        if let touch = trackingTouch, touches.contains(touch) {
+            resetJoystick()
+        }
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        resetJoystick()
+        if let touch = trackingTouch, touches.contains(touch) {
+            resetJoystick()
+        }
     }
     
     private func updateStickPosition(with location: CGPoint) {
@@ -104,6 +113,7 @@ class Joystick: SKNode {
     }
     
     private func resetJoystick() {
+        trackingTouch = nil
         isTouching = false
         stickNode.position = .zero
         velocity = .zero

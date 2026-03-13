@@ -223,4 +223,23 @@ class EntityFactory {
         
         return SKTexture(image: image)
     }
+    
+    // MARK: Projectile
+    static func makeProjectile(at position: CGPoint, direction: CGVector, scene: SKScene) -> Entity {
+        let entity = Entity()
+        
+        // Visual do tiro (pode substituir por um SKSpriteNode com textura depois)
+        let node = SKShapeNode(circleOfRadius: 8)
+        node.fillColor = .cyan
+        node.strokeColor = .white
+        node.lineWidth = 1.5
+        node.position = position
+        node.zPosition = 9
+        scene.addChild(node)
+        
+        entity.add(TransformComponent(node: node))
+        entity.add(ProjectileComponent(damage: 15, direction: direction, speed: 600))
+        
+        return entity
+    }
 }

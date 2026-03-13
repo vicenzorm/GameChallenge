@@ -16,6 +16,9 @@ class AttackComponent: Component {
     var lastAttackTime: TimeInterval = 0
     var isAttacking: Bool = false
     var attackNode: SKShapeNode?
+    
+    var wantsToShoot: Bool = false
+    var shootDirection: CGVector = .zero
 
     init(damage: CGFloat, range: CGFloat, cooldown: TimeInterval) {
         self.damage = damage
