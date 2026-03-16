@@ -71,6 +71,18 @@ enum AssetName {
         dmgBase:   "bix_dmg_",   dmgCount:   3,
         deathBase: "bix_die_",   deathCount: 3
     )
+    
+    // Em AssetName, adicione:
+    static let bixShooter = EnemyAsset(
+        flyBase:   "bix_fly_",   flyCount:   4,
+        dmgBase:   "bix_dmg_",   dmgCount:   3,
+        deathBase: "bix_die_",   deathCount: 3
+    )
+    static let bixBoss = EnemyAsset(
+        flyBase:   "bix_fly_",   flyCount:   4,
+        dmgBase:   "bix_dmg_",   dmgCount:   3,
+        deathBase: "bix_die_",   deathCount: 3
+    )
 }
 
 class EntityFactory {
@@ -150,6 +162,12 @@ class EntityFactory {
         case .strong:
             asset      = AssetName.bix          // ← troque por AssetName.seuNovoInimigo quando tiver
             spriteSize = CGSize(width: 128, height: 128)
+        case .shooter:
+            asset      = AssetName.bixShooter
+            spriteSize = CGSize(width: 72, height: 72)
+        case .boss:
+            asset      = AssetName.bixBoss
+            spriteSize = CGSize(width: 200, height: 200)  // ← escala maior
         }
 
         // ── Carrega texturas ────────────────────────────────────────────────
@@ -214,6 +232,25 @@ class EntityFactory {
 
         entity.add(TransformComponent(node: node))
         entity.add(CoinComponent())
+
+        return entity
+    }
+    
+    // Projétil do inimigo — cor diferente para distinguir do player
+    static func makeEnemyProjectile(at position: CGPoint, direction: CGVector, scene: SKScene) -> Entity {
+        let entity = Entity()
+
+        let node = SKShapeNode(circleOfRadius: 7)
+        node.fillColor   = UIColor(red: 1.0, green: 0.3, blue: 0.1, alpha: 1)  // laranja
+        node.strokeColor = .yellow
+        node.lineWidth   = 1.5
+        node.position    = position
+        node.zPosition   = 9
+        scene.addChild(node)
+
+        entity.add(TransformComponent(node: node))
+        // Dano fixo de 12, velocidade menor que a do player
+        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 380))
 
         return entity
     }

@@ -43,6 +43,7 @@ class GameScene: SKScene {
     private var boxEntities: [Entity] = []
     private var projectileEntities: [Entity] = []
     private var dyingEnemies: [Entity] = []
+    private var enemyProjectileEntities: [Entity] = []
     
     // Systems
     private let movementSystem   = MovementSystem()
@@ -279,7 +280,19 @@ class GameScene: SKScene {
         )
         
         // 3. Enemy AI
-        enemyAISystem.update(enemies: enemyEntities, playerEntity: playerEntity, deltaTime: dt)
+        enemyAISystem.update(
+            enemies: enemyEntities,
+            playerEntity: playerEntity,
+            deltaTime: dt,
+            currentTime: currentTime,
+            onEnemyShoot: { [weak self] enemy, direction in
+                guard let self,
+                      let pos = enemy.get(TransformComponent.self)?.node.position
+                else { return }
+                let proj = EntityFactory.makeEnemyProjectile(at: pos, direction: direction, scene: self)
+                self.enemyProjectileEntities.append(proj)
+            }
+        )
         
         // 4. Movement system moves all dynamic entities (player + enemies) using velocity/acceleration from components
         movementSystem.update(entities: [playerEntity!] + enemyEntities, deltaTime: dt)
@@ -347,6 +360,18 @@ class GameScene: SKScene {
         }
         let deadProjIDs = Set(deadProjectiles.map { $0.id })
         projectileEntities.removeAll { deadProjIDs.contains($0.id) }
+        
+        // 6.6 Projéteis inimigos → causam dano ao player
+        let deadEnemyProj = projectileSystem.updateEnemyProjectiles(
+            projectiles: enemyProjectileEntities,
+            playerEntity: playerEntity,
+            deltaTime: dt
+        )
+        for proj in deadEnemyProj {
+            proj.get(TransformComponent.self)?.node.removeFromParent()
+        }
+        let deadEnemyProjIDs = Set(deadEnemyProj.map { $0.id })
+        enemyProjectileEntities.removeAll { deadEnemyProjIDs.contains($0.id) }
         
         // 7. Health bars
         healthSystem.update(entities: enemyEntities)
