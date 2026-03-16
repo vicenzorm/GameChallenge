@@ -273,18 +273,29 @@ class HUD: SKNode {
         root.addChild(title)
 
         root.addChild(makeOverlayButton(
+            text: "Continue",
+            color: UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95),
+            pos: CGPoint(x: 0, y: 0),
+            name: "continueButton"))
+        
+        root.addChild(makeOverlayButton(
             text: "↺  PLAY AGAIN",
             color: UIColor(red: 0.1, green: 0.5, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: -5),
+            pos: CGPoint(x: 0, y: -60),
             name: "restartButton"
         ))
         root.addChild(makeOverlayButton(
             text: "⬅  MENU",
             color: UIColor(red: 0.3, green: 0.1, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: -65),
+            pos: CGPoint(x: 0, y: -120),
             name: "menuFromGameOver"
         ))
         addChild(root)
+    }
+    
+    func hideGameOver() {
+        gameOverOverlay?.removeFromParent()
+        gameOverOverlay = nil
     }
 
     private func makeOverlayButton(text: String, color: UIColor, pos: CGPoint, name: String) -> SKNode {

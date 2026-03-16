@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D71ED0EC2F6876AC0071FA6A /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = D71ED0EB2F6876AB0071FA6A /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		C533EEFA2F61E0AD00638770 /* GameChallenge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GameChallenge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D71ED0EE2F6876CA0071FA6A /* Exceptions for "GameChallenge" folder in "GameChallenge" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C533EEF92F61E0AD00638770 /* GameChallenge */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C533EEFC2F61E0AD00638770 /* GameChallenge */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D71ED0EE2F6876CA0071FA6A /* Exceptions for "GameChallenge" folder in "GameChallenge" target */,
+			);
 			path = GameChallenge;
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D71ED0EC2F6876AC0071FA6A /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = GameChallenge;
 			packageProductDependencies = (
+				D71ED0EB2F6876AB0071FA6A /* GoogleMobileAds */,
 			);
 			productName = GameChallenge;
 			productReference = C533EEFA2F61E0AD00638770 /* GameChallenge.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = C533EEF12F61E0AD00638770;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D71ED0EA2F6876AB0071FA6A /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C533EEFB2F61E0AD00638770 /* Products */;
 			projectDirPath = "";
@@ -254,9 +276,10 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = SSL59624G4;
+				DEVELOPMENT_TEAM = RX54746WSR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GameChallenge/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Dungeon Climber";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -293,9 +316,10 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = SSL59624G4;
+				DEVELOPMENT_TEAM = RX54746WSR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GameChallenge/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Dungeon Climber";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -346,6 +370,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D71ED0EA2F6876AB0071FA6A /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D71ED0EB2F6876AB0071FA6A /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D71ED0EA2F6876AB0071FA6A /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C533EEF22F61E0AD00638770 /* Project object */;
 }
