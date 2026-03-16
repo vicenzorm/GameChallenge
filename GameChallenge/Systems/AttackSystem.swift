@@ -10,16 +10,20 @@ import CoreMotion
 import Foundation
 
 class AttackSystem {
+   
+    
     func update(
         attackerEntity: Entity,
         enemies: [Entity],
         scene: SKScene,
         isSpecial: Bool = false
     ) {
+        
         guard
             let attackComp      = attackerEntity.get(AttackComponent.self),
             attackComp.isAttacking,
-            let attackerTransform = attackerEntity.get(TransformComponent.self)
+            let attackerTransform = attackerEntity.get(TransformComponent.self),
+            !attackComp.didApplyDamage
         else { return }
 
         let origin = attackerTransform.node.position
@@ -27,6 +31,7 @@ class AttackSystem {
         let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
 
         // Sword arc visual
+        
         attackComp.attackNode?.removeFromParent()
         let arc = SKShapeNode(circleOfRadius: range)
         arc.fillColor   = isSpecial
@@ -41,6 +46,9 @@ class AttackSystem {
         arc.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
 
         // Hit enemies in range
+        
+        var didHitEnemy = false
+        
         for enemy in enemies {
             guard
                 let enemyTransform = enemy.get(TransformComponent.self),
@@ -53,7 +61,14 @@ class AttackSystem {
                     .colorize(with: .red, colorBlendFactor: 1, duration: 0.05),
                     .colorize(withColorBlendFactor: 0, duration: 0.1)
                 ]))
+                didHitEnemy = true
+                
             }
         }
+        if didHitEnemy {
+            SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)
+        }
+        
+        attackComp.didApplyDamage = true
     }
 }

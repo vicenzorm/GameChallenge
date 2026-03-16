@@ -98,12 +98,12 @@ class Pause: SKNode {
             let node = atPoint(location)
             
             if node.name == "playButton" {
-                SoundManager.soundEffects.playButtonSound()
+                SoundManager.shared.play(SoundManager.shared.button, on: node)
                 resumeGame()
                 onEndedPauseAction()
             }
             else if node.name == "backButton" {
-                SoundManager.soundEffects.playButtonSound()
+                SoundManager.shared.play(SoundManager.shared.button, on: node)
                 if let scene = self.scene?.view {
                     let menuScene = MenuScene(size: self.scene!.size)
                     menuScene.scaleMode = self.scene!.scaleMode

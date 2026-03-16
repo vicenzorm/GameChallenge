@@ -1,109 +1,68 @@
-//
-//  SoundManager.swift
-//  SSC1
-//
-//  Created by Vicenzo Másera on 07/01/26.
-//
-
-import Foundation
+import SpriteKit
 import AVFoundation
 
-class SoundManager {
-    static let soundEffects = SoundManager()
-    static let mainSoundTrack = SoundManager()
-    private var audioPlayer: AVAudioPlayer?
-    private var isPlaying: Bool = false
-    
-    func playAudio(audio: String, type: String = "mp3", loop: Bool, volume: Float) {
-        if AppManager.shared.soundEnabled {
-            guard let audioURL = Bundle.main.url(forResource: audio, withExtension: type) else {
-                print("audio file not found: \(audio).\(type)")
-                return
-            }
-            do {
-                try AVAudioSession.sharedInstance().setCategory(.playback, options: .mixWithOthers)
-                try AVAudioSession.sharedInstance().setActive(true)
-                audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-                audioPlayer?.volume = volume
-                audioPlayer?.numberOfLoops = loop ? -1 : 0
-                audioPlayer?.enableRate = true
-                audioPlayer?.prepareToPlay()
-                audioPlayer?.play()
-            } catch {
-                print(error)
-            }
+final class SoundManager {
+
+    static let shared = SoundManager()
+
+    // MARK: - Music
+    private var musicPlayer: AVAudioPlayer?
+
+    // MARK: - SFX (pré-criados)
+    let button = SKAction.playSoundFileNamed("button.wav", waitForCompletion: false)
+    let buttonSpecial = SKAction.playSoundFileNamed("buttonSpecial.wav", waitForCompletion: false)
+    let toggle = SKAction.playSoundFileNamed("toggle.wav", waitForCompletion: false)
+
+    let hit1 = SKAction.playSoundFileNamed("hit1.wav", waitForCompletion: false)
+    let hit2 = SKAction.playSoundFileNamed("hit2.wav", waitForCompletion: false)
+
+    let attack1 = SKAction.playSoundFileNamed("attack1.wav", waitForCompletion: false)
+    let attack2 = SKAction.playSoundFileNamed("attack2.wav", waitForCompletion: false)
+
+    let damage = SKAction.playSoundFileNamed("damage.wav", waitForCompletion: false)
+    let death = SKAction.playSoundFileNamed("death.wav", waitForCompletion: false)
+    let enemyKilled = SKAction.playSoundFileNamed("enemyKilled.wav", waitForCompletion: false)
+
+    let footstep = SKAction.playSoundFileNamed("footstep.wav", waitForCompletion: false)
+
+    private init() {}
+
+    // MARK: - Play SFX
+    func play(_ sound: SKAction, on node: SKNode) {
+        guard AppManager.shared.soundEnabled else { return }
+        node.run(sound)
+    }
+
+    // MARK: - Music
+    func playMusic(name: String, volume: Float, loop: Bool = true) {
+
+        guard AppManager.shared.soundEnabled else { return }
+
+        guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else {
+            print("music not found: \(name)")
+            return
+        }
+
+        do {
+            musicPlayer = try AVAudioPlayer(contentsOf: url)
+            musicPlayer?.volume = volume
+            musicPlayer?.numberOfLoops = loop ? -1 : 0
+            musicPlayer?.prepareToPlay()
+            musicPlayer?.play()
+        } catch {
+            print(error)
         }
     }
-    
-    func stopSounds() {
-        audioPlayer?.stop()
-        isPlaying = false
+
+    func stopMusic() {
+        musicPlayer?.stop()
     }
-    
-    func playStartButtonSound() {
-        playAudio(audio: "buttonSpecial", type: "wav", loop: false, volume: 0.5)
-    }
-    
-    func playButtonSound() {
-        playAudio(audio: "button", type: "wav", loop: false, volume: 0.5)
-    }
-    
-    func playToggleSound() {
-        playAudio(audio: "toggle", type: "wav", loop: false, volume: 0.5)
-    }
-    
-    func playHitAttack1Sound() {
-        playAudio(audio: "hit1", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func playHitAttack2Sound() {
-        playAudio(audio: "hit2", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func playDamageSound() {
-        playAudio(audio: "damage", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func attack1Sound() {
-        playAudio(audio: "attack1", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func attack2Sound() {
-        playAudio(audio: "attack2", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func footstepSound() {
-        playAudio(audio: "footstep", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func deathSound() {
-        playAudio(audio: "death", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func enemyKilledSound() {
-        playAudio(audio: "enemyKilled", type: "wav", loop: false, volume: 0.35)
-    }
-    
-    func playMenuMusic() {
-        playAudio(audio: "menuMusic", loop: true, volume: 0.3)
-        isPlaying = true
-        
-    }
-    
-    func playGameplayMusic() {
-        playAudio(audio: "gameplayMusic", loop: true, volume: 0.2)
-        isPlaying = true
-    }
-    
+
     func fadeOutMusic(duration: TimeInterval) {
-        if let audioPlayer, isPlaying {
-            audioPlayer.setVolume(0, fadeDuration: duration)
-        }
+        musicPlayer?.setVolume(0, fadeDuration: duration)
     }
-    
-    func setVolume(_ volume: Float) {
-        guard let audioPlayer else { return }
-        audioPlayer.volume = volume
+
+    func setMusicVolume(_ volume: Float) {
+        musicPlayer?.volume = volume
     }
-    
 }

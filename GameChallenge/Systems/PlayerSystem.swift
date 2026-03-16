@@ -10,6 +10,10 @@ import CoreMotion
 import Foundation
 
 class PlayerSystem {
+    
+    private var lastFootstepTime: TimeInterval = 0
+    private let footstepInterval: TimeInterval = 0.25
+    
     func update(
         playerEntity: Entity,
         motionDirection: CGVector,
@@ -63,6 +67,7 @@ class PlayerSystem {
             // 1. MARCA O ATAQUE COMO ATIVO IMEDIATAMENTE
             attack.isAttacking = true
             attack.lastAttackTime = currentTime
+            attack.didApplyDamage = false
             
             // 2. ATIVA A ANIMAÇÃO
             sprite.isAttacking = true
@@ -73,6 +78,8 @@ class PlayerSystem {
             if !sprite.attackTextures.isEmpty {
                 node.texture = sprite.attackTextures[0]
             }
+            
+            SoundManager.shared.play(SoundManager.shared.attack1, on: node)
         }
 
         // Special handling
@@ -94,11 +101,13 @@ class PlayerSystem {
         
         // Update sprite animation with current time
         updateSpriteAnimation(sprite: sprite, node: node, currentTime: currentTime, attack: attack)
+
     }
     
     private func updateSpriteAnimation(sprite: SpriteComponent, node: SKSpriteNode, currentTime: TimeInterval, attack: AttackComponent) {
         
         // Se não está atacando, faz a animação normal de movimento/idle
+        
         if !sprite.isAttacking {
             if sprite.isMoving {
                 // Animação de movimento
@@ -120,6 +129,12 @@ class PlayerSystem {
                     node.texture = textures[sprite.currentFrame]
                     sprite.lastFrameTime = currentTime
                 }
+                
+                if sprite.isMoving && currentTime - lastFootstepTime > footstepInterval {
+                    SoundManager.shared.play(SoundManager.shared.footstep, on: node)
+                    lastFootstepTime = currentTime
+                }
+                
             } else {
                 // Idle - volta pro primeiro frame da última direção
                 switch sprite.lastDirection {
