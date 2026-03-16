@@ -10,7 +10,7 @@ import CoreMotion
 import Foundation
 
 class WaveSystem {
-    private(set) var currentWave: Int = 10
+    private(set) var currentWave: Int = 0
     private(set) var isSpawning: Bool = false
 
     private var spawnTimer:        TimeInterval = 0

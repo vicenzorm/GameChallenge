@@ -8,21 +8,27 @@
 import SpriteKit
 
 class Joystick: SKNode {
-    private let baseNode: SKSpriteNode
-    private let stickNode: SKSpriteNode
+    private let baseNode: SKShapeNode
+    private let stickNode: SKShapeNode
     private let radius: CGFloat = 50
+    
+    private var trackingTouch: UITouch?
     
     var velocity: CGPoint = .zero
     var isTouching = false
     
     override init() {
         // Create base
-        baseNode = SKSpriteNode(color: UIColor(white: 0.3, alpha: 0.5), size: CGSize(width: 100, height: 100))
+        baseNode = SKShapeNode(circleOfRadius: radius)
         baseNode.name = "joystickBase"
-        
+        baseNode.fillColor = UIColor(white: 0.3, alpha: 0.5)
+        baseNode.strokeColor = UIColor.clear
+                
         // Create stick
-        stickNode = SKSpriteNode(color: UIColor(white: 0.8, alpha: 0.8), size: CGSize(width: 50, height: 50))
+        stickNode = SKShapeNode(circleOfRadius: radius * 0.5) // 25 de raio
         stickNode.name = "joystickStick"
+        stickNode.fillColor = UIColor(white: 0.8, alpha: 0.8)
+        stickNode.strokeColor = UIColor.clear
         
         super.init()
         
@@ -46,29 +52,36 @@ class Joystick: SKNode {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
+        if trackingTouch != nil { return }
         
-        // Check if touch is within base area (with some extra margin)
-        let distance = hypot(location.x, location.y)
-        if distance <= radius + 30 {
-            isTouching = true
-            updateStickPosition(with: location)
+        for touch in touches {
+            let location = touch.location(in: self)
+            let distance = hypot(location.x, location.y)
+            if distance <= radius + 30 {
+                trackingTouch = touch
+                isTouching = true
+                updateStickPosition(with: location)
+                break
+            }
         }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard isTouching, let touch = touches.first else { return }
+        guard isTouching, let touch = trackingTouch, touches.contains(touch) else { return }
         let location = touch.location(in: self)
         updateStickPosition(with: location)
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        resetJoystick()
+        if let touch = trackingTouch, touches.contains(touch) {
+            resetJoystick()
+        }
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        resetJoystick()
+        if let touch = trackingTouch, touches.contains(touch) {
+            resetJoystick()
+        }
     }
     
     private func updateStickPosition(with location: CGPoint) {
@@ -104,6 +117,7 @@ class Joystick: SKNode {
     }
     
     private func resetJoystick() {
+        trackingTouch = nil
         isTouching = false
         stickNode.position = .zero
         velocity = .zero

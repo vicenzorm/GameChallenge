@@ -35,12 +35,14 @@ import CoreMotion
 private let kBackgroundAsset = "background_tile"  // ← your background image in Assets.xcassets
 
 class GameScene: SKScene {
-
+    
     // MARK: ECS
     private var playerEntity:  Entity!
     private var enemyEntities: [Entity] = []
     private var coinEntities:  [Entity] = []
-
+    private var boxEntities: [Entity] = []
+    private var projectileEntities: [Entity] = []
+    
     // Systems
     private let movementSystem   = MovementSystem()
     private let inputSystem      = InputSystem()
@@ -51,19 +53,22 @@ class GameScene: SKScene {
     private let collisionSystem  = CollisionSystem()
     private let waveSystem       = WaveSystem()
     private let coinSpawnSystem  = CoinSpawnSystem()
-
+    private let boxSystem        = BoxSystem()
+    private let projectileSystem = ProjectileSystem()
+    
     // MARK: UI
     private var hud:        HUD!
     private var cameraNode: SKCameraNode!
-    private var joystick:   Joystick!
-
+    private var movementJoystick: Joystick!
+    private var attackJoystick:   Joystick!
+    
     // Cutscene (retido aqui para não ser desalocado durante o vídeo)
     private var cutscenePlayer: CutscenePlayer?
-
+    
     // Pause state
     private var isPausedByPlayer = false
     private var pauseNode: Pause!
-
+    
     // World size
     private let worldSize = CGSize(width: 2400, height: 2400)
     
@@ -79,32 +84,34 @@ class GameScene: SKScene {
     
     /// Scene entry point: constructs world, camera, UI, player, and wires callbacks.
     override func didMove(to view: SKView) {
+        view.isMultipleTouchEnabled = true
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         setupWorld()
         setupCamera()
         setupJoystick()
         setupHUD(view: view)
         setupPlayer()
+        setupBoxes()
         setupWaveCallbacks()
         setupCoinCallbacks()
         waveSystem.startNextWave(sceneSize: worldSize)
     }
     
-
+    
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
         layoutJoystick()
     }
-
+    
     // MARK: Setup
-
+    
     /// Builds the visible world (tiled background + border) and adds it to the scene.
     private func setupWorld() {
         // Tiled background using the asset image
         let tileSize = CGSize(width: 256, height: 256)   // ← adjust to match your image size
         let cols = Int(ceil(worldSize.width  / tileSize.width))  + 1
         let rows = Int(ceil(worldSize.height / tileSize.height)) + 1
-
+        
         for row in 0...rows {
             for col in 0...cols {
                 let tile = SKSpriteNode(imageNamed: kBackgroundAsset)
@@ -117,7 +124,7 @@ class GameScene: SKScene {
                 addChild(tile)
             }
         }
-
+        
         // World border
         let border = SKShapeNode(rectOf: worldSize)
         border.strokeColor = UIColor(white: 0.5, alpha: 0.8)
@@ -126,7 +133,7 @@ class GameScene: SKScene {
         border.zPosition   = -5
         addChild(border)
     }
-
+    
     /// Creates and adds the camera node, setting its zPosition and linking it to the scene.
     private func setupCamera() {
         cameraNode          = SKCameraNode()
@@ -134,40 +141,46 @@ class GameScene: SKScene {
         addChild(cameraNode)
         camera = cameraNode
     }
-
+    
     /// Initializes the joystick, adds it to the camera, and makes it visible and interactive.
     private func setupJoystick() {
-        joystick = Joystick()
-        cameraNode.addChild(joystick)
-        joystick.isHidden = false
-        joystick.isUserInteractionEnabled = true
+        movementJoystick = Joystick()
+        cameraNode.addChild(movementJoystick)
+        movementJoystick.isUserInteractionEnabled = true
+        
+        attackJoystick = Joystick()
+        cameraNode.addChild(attackJoystick)
+        attackJoystick.isUserInteractionEnabled = true
+        
         layoutJoystick()
     }
     
     /// Positions the joystick in the bottom-left of the camera's visible area.
     /// Safe to call multiple times (e.g., on rotation/resize). No-ops if scene/joystick not ready.
     private func layoutJoystick() {
-        // Ensure we have a joystick and camera before laying out
-        guard let joystick = joystick, let scene = self.scene ?? self as SKScene? else { return }
+        guard let movementJoystick = movementJoystick,
+              let attackJoystick = attackJoystick,
+              let scene = self.scene ?? self as SKScene? else { return }
         let margin: CGFloat = 80
         // Scene size represents the camera's visible rect when camera is centered and scaleMode applied
         let width  = scene.size.width
         let height = scene.size.height
         // Convert to camera's local coordinate space: camera's origin is its center
-        joystick.position = CGPoint(x: -width/2 + margin, y: -height/2 + margin)
+        movementJoystick.position = CGPoint(x: -width/2 + margin, y: -height/2 + margin)
+        attackJoystick.position = CGPoint(x: width/2 - margin, y: -height/2 + margin)
     }
-
+    
     /// Creates and adds the HUD to the camera node.
     private func setupHUD(view: SKView) {
         hud = HUD(screenSize: view.bounds.size)
         cameraNode.addChild(hud)
     }
-
+    
     /// Spawns the player entity at the scene center.
     private func setupPlayer() {
         playerEntity = EntityFactory.makePlayer(at: .zero, scene: self)
     }
-
+    
     /// Connects wave system callbacks to spawn enemies, update HUD, and handle cutscenes.
     private func setupWaveCallbacks() {
         waveSystem.onSpawnEnemy = { [weak self] type, pos in
@@ -177,13 +190,14 @@ class GameScene: SKScene {
         waveSystem.onWaveStart = { [weak self] wave in
             self?.hud.updateWave(wave)
             self?.showWaveBanner(wave: wave)
+            self?.reshuffleBoxes()  
         }
         waveSystem.onWaveEnd = { [weak self] completedWave in
             // Exibe cutscene como overlay sobre o SKView — sem trocar de cena.
             // Se não existir vídeo "cutscene_wave_N.mp4" no bundle, é pulada automaticamente.
             guard let self, let view = self.view else { return }
             self.isPausedByPlayer = true
-
+            
             let cp = CutscenePlayer()
             self.cutscenePlayer = cp   // retém para não ser desalocado
             cp.play(wave: completedWave, over: view) { [weak self] in
@@ -196,6 +210,42 @@ class GameScene: SKScene {
             self?.hud.showCountdown(seconds)
         }
     }
+    
+    /// Scatters indestructible boxes randomly around the world, keeping the centre clear.
+    private func setupBoxes() {
+        let count      = 40          // tweak to taste
+        let margin: CGFloat = 100    // min distance from world edge
+        let clearRadius: CGFloat = 200  // spawn-free zone around the player start (0,0)
+
+        var placed = 0
+        var attempts = 0
+        let maxAttempts = count * 10
+
+        while placed < count && attempts < maxAttempts {
+            attempts += 1
+            let x = CGFloat.random(in: -worldSize.width  / 2 + margin ... worldSize.width  / 2 - margin)
+            let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
+            let pos = CGPoint(x: x, y: y)
+
+            // Keep the player start area clear
+            guard hypot(pos.x, pos.y) > clearRadius else { continue }
+
+            boxEntities.append(EntityFactory.makeBox(at: pos, scene: self))
+            placed += 1
+        }
+    }
+    
+    /// Removes all current boxes and spawns a fresh random layout.
+    func reshuffleBoxes() {
+        // Remove existing box nodes from the scene
+        for box in boxEntities {
+            box.get(TransformComponent.self)?.node.removeFromParent()
+        }
+        boxEntities.removeAll()
+
+        // Spawn a new layout using the same logic as setupBoxes()
+        setupBoxes()
+    }
 
     /// Connects coin spawn system callbacks to spawn coins in the scene.
     private func setupCoinCallbacks() {
@@ -204,50 +254,77 @@ class GameScene: SKScene {
             self.coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
         }
     }
-
+    
     /// Main game loop: gathers input, updates systems in a deterministic order, and syncs the HUD.
     override func update(_ currentTime: TimeInterval) {
         guard !isPausedByPlayer else { return }
         let dt = calculateDeltaTime(currentTime)
-
+        
         // 1. Get joystick input
-        let movementDirection = joystick.velocity
-        let movementVector = CGVector(dx: movementDirection.x, dy: movementDirection.y)
-        inputSystem.update(playerEntity: playerEntity, joystickDirection: CGPoint(x: movementVector.dx, y: movementVector.dy))
-
+        let movementVelocity = movementJoystick.velocity
+        let attackVelocity = attackJoystick.velocity
+        
+        inputSystem.update(playerEntity: playerEntity,
+                           movementDirection: movementVelocity,
+                           attackDirection: attackVelocity)
+        
         // 2. Player
         playerSystem.update(
             playerEntity:    playerEntity,
-            motionDirection: CGVector(dx: movementVector.dx, dy: movementVector.dy),  // Using joystick direction instead of motion
+            motionDirection: CGVector(dx: movementVelocity.x, dy: movementVelocity.y),
             deltaTime:       dt,
             currentTime:     currentTime
         )
-
+        
         // 3. Enemy AI
         enemyAISystem.update(enemies: enemyEntities, playerEntity: playerEntity, deltaTime: dt)
-
+        
         // 4. Movement system moves all dynamic entities (player + enemies) using velocity/acceleration from components
         movementSystem.update(entities: [playerEntity!] + enemyEntities, deltaTime: dt)
+
+        // 4b. Box collision — push movers out of indestructible boxes
+        boxSystem.update(movers: [playerEntity!] + enemyEntities, boxes: boxEntities)
 
         // 5. Camera follows player
         if let node = playerEntity.get(TransformComponent.self)?.node {
             cameraNode.position = node.position
             pauseNode.position = node.position
         }
-
-        // 6. Attack
-        if let attack = playerEntity.get(AttackComponent.self), attack.isAttacking {
-            attackSystem.update(attackerEntity: playerEntity, enemies: enemyEntities, scene: self)
-            hud.flashButtonA()
+        
+        // 6. Attack & Shooting
+        if let attack = playerEntity.get(AttackComponent.self) {
+            
+            // Ataque Corpo a Corpo (Botão A)
+            if attack.isAttacking {
+                attackSystem.update(attackerEntity: playerEntity, enemies: enemyEntities, scene: self)
+                hud.flashButtonA()
+            }
+            
+            // Ataque à Distância (Joystick Direito)
+            if attack.wantsToShoot {
+                attack.wantsToShoot = false
+                if let pos = playerEntity.get(TransformComponent.self)?.node.position {
+                    let projectile = EntityFactory.makeProjectile(at: pos, direction: attack.shootDirection, scene: self)
+                    projectileEntities.append(projectile)
+                }
+            }
         }
-
+        
+        // 6.5. Atualiza as balas e remove as destruídas
+        let deadProjectiles = projectileSystem.update(projectiles: projectileEntities, enemies: enemyEntities, deltaTime: dt)
+        for proj in deadProjectiles {
+            proj.get(TransformComponent.self)?.node.removeFromParent()
+        }
+        let deadProjIDs = Set(deadProjectiles.map { $0.id })
+        projectileEntities.removeAll { deadProjIDs.contains($0.id) }
+        
         // 7. Health bars
         healthSystem.update(entities: enemyEntities)
-
+        
         // 8. Enemy → player collision
         collisionSystem.checkEnemyPlayerCollisions(
             playerEntity: playerEntity, enemies: enemyEntities, deltaTime: dt)
-
+        
         // 9. Coin collection
         let collected = collisionSystem.checkCoinCollection(
             playerEntity: playerEntity, coins: coinEntities)
@@ -258,7 +335,7 @@ class GameScene: SKScene {
         }
         let collectedIDs = Set(collected.map { $0.id })
         coinEntities.removeAll { collectedIDs.contains($0.id) }
-
+        
         // 10. Dead enemies
         var killedPts = 0
         let dead = enemyEntities.filter { $0.get(HealthComponent.self)?.isAlive == false }
@@ -273,7 +350,7 @@ class GameScene: SKScene {
         }
         let deadIDs = Set(dead.map { $0.id })
         enemyEntities.removeAll { deadIDs.contains($0.id) }
-
+        
         // 11. Special charge
         if let pl = playerEntity.get(PlayerComponent.self) {
             pl.killStreak += killedPts
@@ -283,16 +360,16 @@ class GameScene: SKScene {
             hud.updateSpecial(killStreak: pl.killStreak, isReady: pl.specialReady)
             hud.setButtonBActive(pl.specialReady)
         }
-
+        
         // 12. HUD health + game over
         if let h = playerEntity.get(HealthComponent.self) {
             hud.updateHealth(current: h.current, maxHP: h.max)
             if !h.isAlive { triggerGameOver() }
         }
-
+        
         // 13. HUD coins
         if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
-
+        
         // 14. Wave + coin spawn
         if let node = playerEntity.get(TransformComponent.self)?.node {
             waveSystem.update(deltaTime: dt, activeEnemies: enemyEntities.count,
@@ -300,30 +377,30 @@ class GameScene: SKScene {
         }
         coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
     }
-
+    
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
         isPausedByPlayer.toggle()
-//        hud.showPauseOverlay(isPausedByPlayer)
+        //        hud.showPauseOverlay(isPausedByPlayer)
         pauseNode.pauseGame()
     }
-
+    
     /// Calculates time delta for frame updates, capped at 1/30th second.
     private func calculateDeltaTime(_ t: TimeInterval) -> TimeInterval {
         let dt = lastUpdateTime == 0 ? 0 : Swift.min(t - lastUpdateTime, 1.0/30.0)
         lastUpdateTime = t
         return dt
     }
-
+    
     /// Randomly drops a coin at the specified position with a 1 in 3 chance.
     private func maybeDropCoin(at pos: CGPoint) {
         guard Int.random(in: 0..<3) == 0 else { return }
         coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
     }
-
+    
     /// Displays a wave banner at the center of the screen.
     private func showWaveBanner(wave: Int) {
-        let lbl = SKLabelNode(text: "WAVE \(wave)")
+        let lbl = SKLabelNode(text: "FLOOR \(wave)")
         lbl.fontName  = "AvenirNext-Heavy"
         lbl.fontSize  = 32
         lbl.fontColor = .white
@@ -338,18 +415,20 @@ class GameScene: SKScene {
             .removeFromParent()
         ]))
     }
-
+    
     /// Handles game over state by pausing and updating UI.
     private func triggerGameOver() {
         guard !isPausedByPlayer else { return }
         isPausedByPlayer = true
-        joystick.isHidden = true
-        joystick.isUserInteractionEnabled = false
+        movementJoystick.isHidden = true
+        movementJoystick.isUserInteractionEnabled = false
+        attackJoystick.isHidden = true
+        attackJoystick.isUserInteractionEnabled = false
         hud.showGameOver()
     }
-
+    
     // MARK: Touch Handling
-
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let view else { return }
         
@@ -390,7 +469,7 @@ class GameScene: SKScene {
             }
         }
     }
-
+    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let loc = touch.location(in: cameraNode)
@@ -406,7 +485,7 @@ class GameScene: SKScene {
             }
         }
     }
-
+    
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         // Reset button states if touches are cancelled
         inputSystem.attackPressed = false
@@ -420,7 +499,7 @@ class GameScene: SKScene {
             }
         }
     }
-
+    
     // MARK: Navigation Helpers
     
     private func handleMenuNavigation(nodeName: String, view: SKView) {
@@ -434,11 +513,11 @@ class GameScene: SKScene {
             nextScene = GameScene(size: size)
         }
         
-//        nextScene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        //        nextScene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         nextScene.scaleMode = self.scaleMode
         view.presentScene(nextScene, transition: .fade(withDuration: 0.4))
     }
-
+    
     // MARK: Helpers
     private var lastUpdateTime: TimeInterval = 0
 }

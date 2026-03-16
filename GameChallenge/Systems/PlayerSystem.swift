@@ -60,6 +60,22 @@ class PlayerSystem {
         let worldHalf: CGFloat = 1180
         node.position.x = Swift.max(-worldHalf, Swift.min(worldHalf, node.position.x))
         node.position.y = Swift.max(-worldHalf, Swift.min(worldHalf, node.position.y))
+        
+        // RANGED ATTACK HANDLING (Tiro)
+        let isShooting = input.attackDirection.dx != 0 || input.attackDirection.dy != 0
+        if isShooting && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
+                    
+            attack.lastAttackTime = currentTime
+            attack.wantsToShoot = true
+            attack.shootDirection = input.attackDirection
+                    
+            // Opcional: Vira o personagem para o lado do tiro
+            if abs(input.attackDirection.dx) > abs(input.attackDirection.dy) {
+                sprite.currentDirection = input.attackDirection.dx > 0 ? .right : .left
+            } else {
+                sprite.currentDirection = input.attackDirection.dy > 0 ? .up : .down
+            }
+        }
 
         // ATTACK HANDLING - OTIMIZADO PARA INSTANTÂNEO
         if input.attackPressed && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {

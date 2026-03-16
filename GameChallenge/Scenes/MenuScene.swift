@@ -58,7 +58,7 @@ class MenuScene: SKScene {
     
     
     func makeLabels(size: CGSize) {
-        titleLabel = SKLabelNode(text: "Title of the game")
+        titleLabel = SKLabelNode(text: "Dungeon Climber")
         titleLabel.fontName = AppManager.shared.appFont
         titleLabel.fontSize = AppManager.shared.fontSize(type: .subtitle, screenSize: size)
         titleLabel.fontColor = .black
