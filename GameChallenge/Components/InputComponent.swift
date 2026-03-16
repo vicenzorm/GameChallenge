@@ -10,7 +10,12 @@ import Foundation
 
 // Input state (populated by InputSystem)
 class InputComponent: Component {
-    var joystickDirection: CGVector = .zero  // normalized
+    var movementDirection: CGVector = .zero  // normalized
+    var attackDirection: CGVector = .zero
+    
+    var aimDirection: CGVector = .zero
+    var isAiming: Bool = false
+    
     var attackPressed: Bool = false
     var specialPressed: Bool = false
 }

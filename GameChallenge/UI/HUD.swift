@@ -69,7 +69,7 @@ class HUD: SKNode {
         coinLabel.position = CGPoint(x: -hw + 30, y: hh - 55); coinLabel.zPosition = 100
 
         // ── Wave label (top-centre) ────────────────────────────
-        waveLabel = SKLabelNode(text: "Wave 1")
+        waveLabel = SKLabelNode(text: "Floor 1")
         waveLabel.fontName = "AvenirNext-Heavy"; waveLabel.fontSize = 16
         waveLabel.fontColor = .white
         waveLabel.horizontalAlignmentMode = .center
@@ -119,7 +119,7 @@ class HUD: SKNode {
         buttonA = SKShapeNode(circleOfRadius: 28)
         buttonA.fillColor = UIColor(red: 0.15, green: 0.6, blue: 0.15, alpha: 0.88)
         buttonA.strokeColor = .white; buttonA.lineWidth = 2
-        buttonA.position = CGPoint(x: hw - 46, y: -hh + 52); buttonA.zPosition = 100
+        buttonA.position = CGPoint(x: hw - 146, y: -hh + 152); buttonA.zPosition = 100
         buttonA.name = "buttonA"
         let aLbl = SKLabelNode(text: "A")
         aLbl.fontName = "AvenirNext-Heavy"; aLbl.fontSize = 22; aLbl.fontColor = .white
@@ -131,7 +131,7 @@ class HUD: SKNode {
         buttonB = SKShapeNode(circleOfRadius: 22)
         buttonB.fillColor = UIColor(red: 0.1, green: 0.2, blue: 0.7, alpha: 0.88)
         buttonB.strokeColor = .cyan; buttonB.lineWidth = 2
-        buttonB.position = CGPoint(x: hw - 100, y: -hh + 42); buttonB.zPosition = 100
+        buttonB.position = CGPoint(x: hw - 200, y: -hh + 42); buttonB.zPosition = 100
         buttonB.name = "buttonB"
         let bLbl = SKLabelNode(text: "B")
         bLbl.fontName = "AvenirNext-Heavy"; bLbl.fontSize = 17; bLbl.fontColor = .white
@@ -170,7 +170,7 @@ class HUD: SKNode {
     func updateCoins(_ coins: Int) { coinLabel.text = "\(coins)" }
 
     func updateWave(_ wave: Int) {
-        waveLabel.text = "Wave \(wave)"
+        waveLabel.text = "Floor \(wave)"
         countdownLabel.text = ""
         waveLabel.run(.sequence([.scale(to: 1.4, duration: 0.12), .scale(to: 1.0, duration: 0.12)]))
     }
