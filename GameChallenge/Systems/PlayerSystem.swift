@@ -10,6 +10,10 @@ import CoreMotion
 import Foundation
 
 class PlayerSystem {
+    
+    private var lastFootstepTime: TimeInterval = 0
+    private let footstepInterval: TimeInterval = 0.25
+    
     func update(
         playerEntity: Entity,
         motionDirection: CGVector,
@@ -77,12 +81,15 @@ class PlayerSystem {
         if input.attackPressed && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
             attack.isAttacking    = true
             attack.lastAttackTime = currentTime
+            attack.didApplyDamage = false
             sprite.isAttacking    = true
             sprite.isSpecialAttack = false
             sprite.currentFrame   = 0
             sprite.lastFrameTime  = currentTime
             node.setScale(1.25)
             node.texture = sprite.currentAttackTextures.first
+            
+            SoundManager.shared.play(SoundManager.shared.attack1, on: node)
         }
 
         // "Special handling"
@@ -101,6 +108,7 @@ class PlayerSystem {
         
         // Update sprite animation with current time
         updateSpriteAnimation(sprite: sprite, node: node, currentTime: currentTime, attack: attack)
+
     }
     
     private func updateSpriteAnimation(
@@ -119,6 +127,7 @@ class PlayerSystem {
         }
 
         // ── MOVIMENTO ─────────────────────────────────────────────────────────
+        
         if !sprite.isAttacking {
             let textures: [SKTexture]
             switch sprite.currentDirection {
@@ -129,6 +138,12 @@ class PlayerSystem {
             }
             sprite.currentFrame = (sprite.currentFrame + 1) % textures.count
             node.texture = textures[sprite.currentFrame]
+            
+            if sprite.isMoving && currentTime - lastFootstepTime > footstepInterval {
+                SoundManager.shared.play(SoundManager.shared.footstep, on: node)
+                lastFootstepTime = currentTime
+            }
+            
             return
         }
 

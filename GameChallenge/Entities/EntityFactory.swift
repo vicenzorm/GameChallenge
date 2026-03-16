@@ -291,6 +291,8 @@ class EntityFactory {
         entity.add(TransformComponent(node: node))
         entity.add(ProjectileComponent(damage: 15, direction: direction, speed: 600))
         
+        SoundManager.shared.play(SoundManager.shared.attack2, on: node)
+        
         return entity
     }
 }

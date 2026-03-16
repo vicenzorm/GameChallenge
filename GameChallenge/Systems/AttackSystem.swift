@@ -10,6 +10,8 @@ import CoreMotion
 import Foundation
 
 class AttackSystem {
+    
+    private var didHitEnemy = false
 
     func update(
         attackerEntity: Entity,
@@ -17,17 +19,21 @@ class AttackSystem {
         scene: SKScene,
         isSpecial: Bool = false
     ) {
+        
         guard
             let attackComp        = attackerEntity.get(AttackComponent.self),
             attackComp.isAttacking,
             let attackerTransform = attackerEntity.get(TransformComponent.self),
-            let sprite            = attackerEntity.get(SpriteComponent.self)
+            let sprite            = attackerEntity.get(SpriteComponent.self),
+            !attackComp.didApplyDamage
         else { return }
 
         let origin = attackerTransform.node.position
         let range  = isSpecial ? attackComp.range * 2.5 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
 
+
+        // Hit enemies in range
         for enemy in enemies {
             guard
                 let enemyTransform = enemy.get(TransformComponent.self),
@@ -52,7 +58,15 @@ class AttackSystem {
                 .colorize(with: .red, colorBlendFactor: 1, duration: 0.05),
                 .colorize(withColorBlendFactor: 0, duration: 0.1)
             ]))
+                didHitEnemy = true
+                
         }
+        
+        if didHitEnemy {
+            SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)
+        }
+        
+        attackComp.didApplyDamage = true
     }
 }
 
