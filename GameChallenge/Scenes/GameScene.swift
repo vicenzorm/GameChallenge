@@ -427,6 +427,37 @@ class GameScene: SKScene {
         hud.showGameOver()
     }
     
+    private func handleContinue(view: SKView) {
+
+        guard let vc = view.window?.rootViewController else {
+            print("Não encontrou ViewController")
+            return
+        }
+
+        AdManager.shared.showAd(from: vc) { [weak self] in
+            guard let self = self else { return }
+
+            print("Player reviveu após anúncio")
+
+            // revive o player
+            if let health = self.playerEntity.get(HealthComponent.self) {
+                health.current = health.max
+            }
+
+            // remove game over
+            self.hud.hideGameOver()
+
+            // retoma jogo
+            self.isPausedByPlayer = false
+
+            self.movementJoystick.isHidden = false
+            self.movementJoystick.isUserInteractionEnabled = true
+
+            self.attackJoystick.isHidden = false
+            self.attackJoystick.isUserInteractionEnabled = true
+        }
+    }
+    
     // MARK: Touch Handling
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -458,6 +489,9 @@ class GameScene: SKScene {
                         
                     case "resumeButton":
                         togglePause()
+                        
+                    case "continueButton":
+                        handleContinue(view: view)
                         
                     case "restartButton", "menuFromGameOver", "menuFromPause":
                         handleMenuNavigation(nodeName: nodeName, view: view)
