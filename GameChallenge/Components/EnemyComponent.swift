@@ -54,6 +54,9 @@ class EnemyComponent: Component {
             }
         }
     }
+    
+    // Animação do inimigo — nil até makeEnemy() injetar
+    var spriteComp: EnemySpriteComponent?
 
     var type: EnemyType
     init(type: EnemyType) { self.type = type }
