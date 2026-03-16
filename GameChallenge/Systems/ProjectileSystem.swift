@@ -9,6 +9,8 @@
 import SpriteKit
 
 class ProjectileSystem {
+    
+    
     // Retorna os projéteis que bateram ou expiraram para serem removidos
     func update(projectiles: [Entity], enemies: [Entity], deltaTime: TimeInterval) -> [Entity] {
         var projectilesToRemove = [Entity]()
@@ -46,10 +48,14 @@ class ProjectileSystem {
                         .colorize(withColorBlendFactor: 0, duration: 0.1)
                     ]))
                     
+                    SoundManager.shared.play(SoundManager.shared.hit2, on: eTransform.node)
+                    
                     projectilesToRemove.append(proj)
                     break // A bala some no primeiro inimigo que bater
                 }
+                
             }
+            
         }
         
         return projectilesToRemove
