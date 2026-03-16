@@ -10,6 +10,8 @@ import CoreMotion
 import Foundation
 
 class AttackSystem {
+    
+    private var didHitEnemy = false
 
     func update(
         attackerEntity: Entity,
@@ -59,6 +61,12 @@ class AttackSystem {
                 didHitEnemy = true
                 
         }
+        
+        if didHitEnemy {
+            SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)
+        }
+        
+        attackComp.didApplyDamage = true
     }
 }
 
@@ -86,10 +94,5 @@ extension SpriteComponent.Direction {
         case .left:  return CGVector(dx: -1, dy:  0)
         case .right: return CGVector(dx:  1, dy:  0)
         }
-        if didHitEnemy {
-            SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)
-        }
-        
-        attackComp.didApplyDamage = true
     }
 }
