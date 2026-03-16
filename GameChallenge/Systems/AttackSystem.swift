@@ -11,7 +11,7 @@ import Foundation
 
 class AttackSystem {
     
-    private var didHitEnemy = false
+    
 
     func update(
         attackerEntity: Entity,
@@ -33,6 +33,7 @@ class AttackSystem {
         let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
 
 
+        var didHitEnemy = false
         // Hit enemies in range
         for enemy in enemies {
             guard
@@ -50,7 +51,8 @@ class AttackSystem {
                 let facingVector = sprite.lastDirection.vector
                 let dot = facingVector.dx * toEnemy.normalized.dx
                         + facingVector.dy * toEnemy.normalized.dy
-                guard dot > 0 else { continue }   // dot ≤ 0 → atrás do jogador, ignora
+                guard dot > 0 else { continue } // dot ≤ 0 → atrás do jogador, ignora
+                didHitEnemy = true
             }
 
             health.current = Swift.max(0, health.current - damage)
@@ -58,7 +60,7 @@ class AttackSystem {
                 .colorize(with: .red, colorBlendFactor: 1, duration: 0.05),
                 .colorize(withColorBlendFactor: 0, duration: 0.1)
             ]))
-                didHitEnemy = true
+                
                 
         }
         
