@@ -27,18 +27,30 @@ import Foundation
 
 // MARK: - Asset name constants (change here to rename assets)
 enum AssetName {
-    // Player animation frames
-    static let playerDown = "player_down_"      // followed by 1,2,3,4
-    static let playerUp = "player_up_"          // followed by 1,2,3,4
-    static let playerLeft = "player_left_"      // followed by 1,2,3,4
-    static let playerRight = "player_right_"    // followed by 1,2,3,4
-    static let playerAttack = "player_attack_"  // followed by 1,2,3,4,5,6
-    
-    // Static sprites
-    static let enemyWeak   = "enemy_weak"       // ← small enemy image
-    static let enemyNormal = "enemy_normal"     // ← medium enemy image
-    static let enemyStrong = "enemy_strong"     // ← large enemy image
-    static let coin        = "coin_sprite"      // ← coin image
+    static let playerDown   = "adv_run_down_"
+    static let playerUp     = "adv_run_up_"
+    static let playerLeft   = "adv_run_left_"
+    static let playerRight  = "adv_run_right_"
+
+    // Idle (um sprite por direção)
+    static let playerIdleDown  = "adv_idle_down"
+    static let playerIdleUp    = "adv_idle_up"
+    static let playerIdleLeft  = "adv_idle_left"
+    static let playerIdleRight = "adv_idle_right"
+
+    // Ataque direcional (botão A)
+    static let playerAtkDown  = "adv_atk_down_"
+    static let playerAtkUp    = "adv_atk_up_"
+    static let playerAtkLeft  = "adv_atk_left_"
+    static let playerAtkRight = "adv_atk_right_"
+
+    // Ataque especial (botão B — omnidirecional)
+    static let playerAttack = "player_attack_"
+
+    static let enemyWeak   = "enemy_weak"
+    static let enemyNormal = "enemy_normal"
+    static let enemyStrong = "enemy_strong"
+    static let coin        = "coin_sprite"
     static let box         = "box_sprite"
 }
 
@@ -48,39 +60,57 @@ class EntityFactory {
     static func makePlayer(at position: CGPoint, scene: SKScene) -> Entity {
         let entity = Entity()
 
-        // Load textures for different directions
-        let downTextures = loadTextures(baseName: AssetName.playerDown, count: 4)
-        let upTextures = loadTextures(baseName: AssetName.playerUp, count: 4)
-        let leftTextures = loadTextures(baseName: AssetName.playerLeft, count: 4)
-        let rightTextures = loadTextures(baseName: AssetName.playerRight, count: 4)
-        let attackTextures = loadTextures(baseName: AssetName.playerAttack, count: 4)
-        
-        // Create sprite node with initial texture (down)
-        let node = SKSpriteNode(texture: downTextures.first)
-        node.size = CGSize(width: 68, height: 68)   // fixed size — adjust if needed
-        node.position = position
-        node.zPosition = 10
+        let downTextures  = loadTextures(baseName: AssetName.playerDown,  count: 8)
+        let upTextures    = loadTextures(baseName: AssetName.playerUp,    count: 8)
+        let leftTextures  = loadTextures(baseName: AssetName.playerLeft,  count: 8)
+        let rightTextures = loadTextures(baseName: AssetName.playerRight, count: 8)
+
+        // Idle — um frame por direção (fallback para o primeiro frame do run se não existir)
+        let idleDown  = loadSingleTexture(AssetName.playerIdleDown)  ?? downTextures[0]
+        let idleUp    = loadSingleTexture(AssetName.playerIdleUp)    ?? upTextures[0]
+        let idleLeft  = loadSingleTexture(AssetName.playerIdleLeft)  ?? leftTextures[0]
+        let idleRight = loadSingleTexture(AssetName.playerIdleRight) ?? rightTextures[0]
+
+        // Ataque direcional
+        let atkDown  = loadTextures(baseName: AssetName.playerAtkDown,  count: 4)
+        let atkUp    = loadTextures(baseName: AssetName.playerAtkUp,    count: 4)
+        let atkLeft  = loadTextures(baseName: AssetName.playerAtkLeft,  count: 4)
+        let atkRight = loadTextures(baseName: AssetName.playerAtkRight, count: 4)
+
+        // Especial (mantém o genérico)
+        let specialTextures = loadTextures(baseName: AssetName.playerAttack, count: 4)
+
+        let node = SKSpriteNode(texture: idleDown)
+        node.size      = CGSize(width: 48, height: 74)
+        node.position  = position
+        node.zPosition = 6
         scene.addChild(node)
 
-        // Add components
         entity.add(TransformComponent(node: node))
         entity.add(HealthComponent(max: 100))
         entity.add(MovementComponent(speed: 220))
         entity.add(PlayerComponent())
         entity.add(InputComponent())
         entity.add(AttackComponent(damage: 4, range: 70, cooldown: 0.4))
-        
-        // Add sprite component with all animations
-        let spriteComponent = SpriteComponent(
-            downTextures: downTextures,
-            upTextures: upTextures,
-            leftTextures: leftTextures,
-            rightTextures: rightTextures,
-            attackTextures: attackTextures
-        )
-        entity.add(spriteComponent)
+        entity.add(SpriteComponent(
+            downTextures: downTextures, upTextures: upTextures,
+            leftTextures: leftTextures, rightTextures: rightTextures,
+            idleDown: idleDown, idleUp: idleUp,
+            idleLeft: idleLeft, idleRight: idleRight,
+            attackDownTextures: atkDown, attackUpTextures: atkUp,
+            attackLeftTextures: atkLeft, attackRightTextures: atkRight,
+            attackTextures: specialTextures
+        ))
 
         return entity
+    }
+
+    // Carrega um único asset, retorna nil se não existir
+    private static func loadSingleTexture(_ name: String) -> SKTexture? {
+        guard let image = UIImage(named: name) else { return nil }
+        let t = SKTexture(image: image)
+        t.filteringMode = .nearest
+        return t
     }
 
     // MARK: Enemy
@@ -104,7 +134,7 @@ class EntityFactory {
         let node = SKSpriteNode(imageNamed: imageName)
         node.size      = spriteSize
         node.position  = position
-        node.zPosition = 8
+        node.zPosition = 7
         scene.addChild(node)
 
         // Health bar background
@@ -168,7 +198,9 @@ class EntityFactory {
             
             // Try to load the texture
             if let texture = UIImage(named: textureName) {
-                textures.append(SKTexture(image: texture))
+                let realTexture = SKTexture(image: texture)
+                realTexture.filteringMode = .nearest
+                textures.append(realTexture)
             } else {
                 // Fallback: create a colored rectangle for missing textures
                 print("Warning: Could not load texture \(textureName) - using fallback")
@@ -234,7 +266,7 @@ class EntityFactory {
         let node = SKSpriteNode(imageNamed: AssetName.box)
         node.size      = CGSize(width: 50, height: 50)
         node.position  = position
-        node.zPosition = 6
+        node.zPosition = 8
         scene.addChild(node)
         
         entity.add(TransformComponent(node: node))
