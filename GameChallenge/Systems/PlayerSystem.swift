@@ -138,6 +138,12 @@ class PlayerSystem {
             }
             sprite.currentFrame = (sprite.currentFrame + 1) % textures.count
             node.texture = textures[sprite.currentFrame]
+            
+            if sprite.isMoving && currentTime - lastFootstepTime > footstepInterval {
+                SoundManager.shared.play(SoundManager.shared.footstep, on: node)
+                lastFootstepTime = currentTime
+            }
+            
             return
         }
 
