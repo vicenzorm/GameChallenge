@@ -40,6 +40,7 @@ class GameScene: SKScene {
     private var playerEntity:  Entity!
     private var enemyEntities: [Entity] = []
     private var coinEntities:  [Entity] = []
+    private var boxEntities: [Entity] = []
 
     // Systems
     private let movementSystem   = MovementSystem()
@@ -51,6 +52,7 @@ class GameScene: SKScene {
     private let collisionSystem  = CollisionSystem()
     private let waveSystem       = WaveSystem()
     private let coinSpawnSystem  = CoinSpawnSystem()
+    private let boxSystem        = BoxSystem()
 
     // MARK: UI
     private var hud:        HUD!
@@ -85,6 +87,7 @@ class GameScene: SKScene {
         setupJoystick()
         setupHUD(view: view)
         setupPlayer()
+        setupBoxes()
         setupWaveCallbacks()
         setupCoinCallbacks()
         waveSystem.startNextWave(sceneSize: worldSize)
@@ -177,6 +180,7 @@ class GameScene: SKScene {
         waveSystem.onWaveStart = { [weak self] wave in
             self?.hud.updateWave(wave)
             self?.showWaveBanner(wave: wave)
+            self?.reshuffleBoxes()  
         }
         waveSystem.onWaveEnd = { [weak self] completedWave in
             // Exibe cutscene como overlay sobre o SKView — sem trocar de cena.
@@ -195,6 +199,42 @@ class GameScene: SKScene {
         waveSystem.onWaveCountdown = { [weak self] seconds in
             self?.hud.showCountdown(seconds)
         }
+    }
+    
+    /// Scatters indestructible boxes randomly around the world, keeping the centre clear.
+    private func setupBoxes() {
+        let count      = 40          // tweak to taste
+        let margin: CGFloat = 100    // min distance from world edge
+        let clearRadius: CGFloat = 200  // spawn-free zone around the player start (0,0)
+
+        var placed = 0
+        var attempts = 0
+        let maxAttempts = count * 10
+
+        while placed < count && attempts < maxAttempts {
+            attempts += 1
+            let x = CGFloat.random(in: -worldSize.width  / 2 + margin ... worldSize.width  / 2 - margin)
+            let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
+            let pos = CGPoint(x: x, y: y)
+
+            // Keep the player start area clear
+            guard hypot(pos.x, pos.y) > clearRadius else { continue }
+
+            boxEntities.append(EntityFactory.makeBox(at: pos, scene: self))
+            placed += 1
+        }
+    }
+    
+    /// Removes all current boxes and spawns a fresh random layout.
+    func reshuffleBoxes() {
+        // Remove existing box nodes from the scene
+        for box in boxEntities {
+            box.get(TransformComponent.self)?.node.removeFromParent()
+        }
+        boxEntities.removeAll()
+
+        // Spawn a new layout using the same logic as setupBoxes()
+        setupBoxes()
     }
 
     /// Connects coin spawn system callbacks to spawn coins in the scene.
@@ -228,6 +268,9 @@ class GameScene: SKScene {
 
         // 4. Movement system moves all dynamic entities (player + enemies) using velocity/acceleration from components
         movementSystem.update(entities: [playerEntity!] + enemyEntities, deltaTime: dt)
+
+        // 4b. Box collision — push movers out of indestructible boxes
+        boxSystem.update(movers: [playerEntity!] + enemyEntities, boxes: boxEntities)
 
         // 5. Camera follows player
         if let node = playerEntity.get(TransformComponent.self)?.node {

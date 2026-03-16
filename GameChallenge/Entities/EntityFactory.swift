@@ -39,6 +39,7 @@ enum AssetName {
     static let enemyNormal = "enemy_normal"     // ← medium enemy image
     static let enemyStrong = "enemy_strong"     // ← large enemy image
     static let coin        = "coin_sprite"      // ← coin image
+    static let box         = "box_sprite"
 }
 
 class EntityFactory {
@@ -222,5 +223,23 @@ class EntityFactory {
         }
         
         return SKTexture(image: image)
+    }
+    
+    // MARK: Box
+    /// Spawns an indestructible box at `position`.
+    /// Boxes use AABB collision resolved by BoxSystem — no SpriteKit physics needed.
+    static func makeBox(at position: CGPoint, scene: SKScene) -> Entity {
+        let entity = Entity()
+
+        let node = SKSpriteNode(imageNamed: AssetName.box)
+        node.size      = CGSize(width: 50, height: 50)
+        node.position  = position
+        node.zPosition = 6
+        scene.addChild(node)
+
+        entity.add(TransformComponent(node: node))
+        entity.add(BoxComponent())
+
+        return entity
     }
 }
