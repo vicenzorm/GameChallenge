@@ -11,7 +11,8 @@ class AppManager {
     static let shared: AppManager = AppManager()
     
     var soundEnabled: Bool
-    var appFont = UIFont.monospacedSystemFont(ofSize: 40, weight: .semibold).fontName
+    var appFont = "DungeonFont"
+    var secondaryFont = "PressStart2P-Regular"
     
     
     init() {
