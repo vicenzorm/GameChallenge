@@ -60,7 +60,7 @@ class MenuScene: SKScene {
         leaderboardButtonTexture.filteringMode = .nearest
         leaderboardButton = SKSpriteNode(texture: playButtonTexture)
         leaderboardButton.size = CGSize(width: buttonsWSize, height: buttonsHSize)
-        leaderboardButton.position = CGPoint(x: size.width * 0.3, y: size.height * 0.15)
+        leaderboardButton.position = CGPoint(x: size.width * 5, y: size.height * 0.15)
         leaderboardButton.zPosition = 1
         leaderboardButton.name = "leaderboardButton"
         addChild(leaderboardButton)
@@ -69,7 +69,7 @@ class MenuScene: SKScene {
         settingsButtonTexture.filteringMode = .nearest
         settingsButton = SKSpriteNode(texture: playButtonTexture)
         settingsButton.size = CGSize(width: 50, height: 50)
-        settingsButton.position = CGPoint(x: size.width * 0.3, y: size.height * 0.15)
+        settingsButton.position = CGPoint(x: size.width * 5, y: size.height * 0.15)
         settingsButton.zPosition = 1
         settingsButton.name = "settingsButton"
         addChild(settingsButton)

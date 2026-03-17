@@ -69,15 +69,15 @@ class GameScene: SKScene {
     
     // Pause state
     private var isPausedByPlayer = false
-    private var pauseNode: Pause!
+//    private var pauseNode: Pause!
     
     // World size
     private let worldSize = CGSize(width: 2400, height: 2400)
     
     override init(size: CGSize) {
-        pauseNode = Pause(size: size)
+//        pauseNode = Pause(size: size)
         super.init(size: size)
-        addChild(pauseNode)
+//        addChild(pauseNode)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -290,7 +290,7 @@ class GameScene: SKScene {
         // 5. Camera follows player
         if let node = playerEntity.get(TransformComponent.self)?.node {
             cameraNode.position = node.position
-            pauseNode.position = node.position
+//            pauseNode.position = node.position
         }
         
         // 6. Attack & Shooting
@@ -421,8 +421,8 @@ class GameScene: SKScene {
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
         isPausedByPlayer.toggle()
-        //        hud.showPauseOverlay(isPausedByPlayer)
-        pauseNode.pauseGame()
+        hud.showPauseOverlay(isPausedByPlayer)
+//        pauseNode.pauseGame()
     }
     
     /// Calculates time delta for frame updates, capped at 1/30th second.
