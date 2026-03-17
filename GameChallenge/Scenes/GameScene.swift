@@ -302,7 +302,7 @@ class GameScene: SKScene {
         }
         
         // 6. Attack & Shooting
-        if let attack = playerEntity.get(AttackComponent.self) {
+        if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
 
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
@@ -315,6 +315,22 @@ class GameScene: SKScene {
                 )
                 hud.flashButtonA()
             }
+            
+            if inputSystem.specialPressed && pl.specialReady {
+                    inputSystem.specialPressed = false
+                    
+                    attackSystem.startSpecialAttack(
+                        player: playerEntity,
+                        enemies: enemyEntities,
+                        scene: self,
+                        enemySystem: enemySystem
+                    )
+                    
+                    // Zera a barra no componente e no HUD
+                    pl.killStreak = 0
+                    pl.specialReady = false
+                    hud.updateSpecial(killStreak: 0, isReady: false)
+                }
 
             // Especial (Botão B) — só executa se isAttacking E isSpecialAttack estão ativos
             if attack.isAttacking,

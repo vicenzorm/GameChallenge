@@ -45,7 +45,7 @@ enum AssetName {
     static let playerAtkRight = "adv_atk_right_"
 
     // Ataque especial (botão B — omnidirecional)
-    static let playerAttack = "player_attack_"
+//    static let playerAttack = "player_attack_"
 
     static let enemyWeak   = "enemy_weak"
     static let enemyNormal = "enemy_normal"
@@ -95,9 +95,20 @@ class EntityFactory {
         let atkUp    = loadTextures(baseName: AssetName.playerAtkUp,    count: 4)
         let atkLeft  = loadTextures(baseName: AssetName.playerAtkLeft,  count: 4)
         let atkRight = loadTextures(baseName: AssetName.playerAtkRight, count: 4)
+        
+        let spinTextures = [
+            atkDown[0],  // Olhando pra baixo
+            atkRight[0], // Gira pra direita
+            atkUp[0],    // Gira pra cima
+            atkLeft[0],
+            atkDown[1],  // Olhando pra baixo
+            atkRight[1], // Gira pra direita
+            atkUp[1],    // Gira pra cima
+            atkLeft[1], // Gira pra esquerda
+        ]
 
         // Especial (mantém o genérico)
-        let specialTextures = loadTextures(baseName: AssetName.playerAttack, count: 4)
+//        let specialTextures = loadTextures(baseName: AssetName.playerAttack, count: 4)
 
         let node = SKSpriteNode(texture: idleDown)
         node.size      = CGSize(width: 35, height: 75)
@@ -118,7 +129,7 @@ class EntityFactory {
             idleLeft: idleLeft, idleRight: idleRight,
             attackDownTextures: atkDown, attackUpTextures: atkUp,
             attackLeftTextures: atkLeft, attackRightTextures: atkRight,
-            attackTextures: specialTextures
+            attackTextures: spinTextures
         ))
 
         return entity
@@ -327,4 +338,25 @@ class EntityFactory {
         
         return entity
     }
+    
+    static func makeSpinAttackAction(spriteComponent: SpriteComponent) -> SKAction {
+        // Pegamos o primeiro frame de cada direção para dar a sensação de giro rápido
+        // Ou você pode usar todos os frames de cada direção se quiser um giro mais lento
+        
+        let frameR = spriteComponent.attackRightTextures.first!
+        let frameU = spriteComponent.attackUpTextures.first!
+        let frameL = spriteComponent.attackLeftTextures.first!
+        let frameD = spriteComponent.attackDownTextures.first!
+        
+        // Criamos a sequência de troca de texturas
+        let spinTextures = [frameR, frameU, frameL, frameD]
+        
+        // Cada frame dura bem pouquinho para o giro parecer fluido
+        let animateSpin = SKAction.animate(with: spinTextures, timePerFrame: 0.07)
+        
+        // Podemos repetir o giro 2 vezes para ficar mais impactante
+        return SKAction.repeat(animateSpin, count: 2)
+    }
+    
+    
 }
