@@ -8,56 +8,98 @@
 import SpriteKit
 import Foundation
 
-// Enemy-specific
 class EnemyComponent: Component {
     enum EnemyType {
-        case weak, normal, strong
-
-        var radius: CGFloat {
-            switch self {
-            case .weak: return 14
-            case .normal: return 22
-            case .strong: return 32
-            }
-        }
+        case weak, normal, strong, shooter, boss
 
         var maxHealth: CGFloat {
             switch self {
-            case .weak: return 30
-            case .normal: return 80
-            case .strong: return 200
+            case .weak:    return 30
+            case .normal:  return 70
+            case .strong:  return 150
+            case .shooter: return 50
+            case .boss:    return 300
             }
         }
 
         var speed: CGFloat {
             switch self {
-            case .weak: return 90
-            case .normal: return 65
-            case .strong: return 45
+            case .weak:    return 90
+            case .normal:  return 70
+            case .strong:  return 50
+            case .shooter: return 55
+            case .boss:    return 35
             }
         }
 
         var damage: CGFloat {
             switch self {
-            case .weak: return 5
-            case .normal: return 12
-            case .strong: return 25
+            case .weak:    return 8
+            case .normal:  return 14
+            case .strong:  return 22
+            case .shooter: return 10
+            case .boss:    return 30
             }
         }
 
-        // Points toward special charge when killed
+        var radius: CGFloat {
+            switch self {
+            case .weak:    return 24
+            case .normal:  return 34
+            case .strong:  return 50
+            case .shooter: return 28
+            case .boss:    return 90
+            }
+        }
+
         var specialPoints: Int {
             switch self {
-            case .weak: return 1
-            case .normal: return 2  // needs ceil(5/2)=3 kills
-            case .strong: return 5  // 1 kill = 5 pts (threshold 5)
+            case .weak:    return 1
+            case .normal:  return 2
+            case .strong:  return 4
+            case .shooter: return 2
+            case .boss:    return 10
+            }
+        }
+
+        // Se o tipo consegue atirar
+        var canShoot: Bool {
+            switch self {
+            case .shooter, .boss: return true
+            default: return false
+            }
+        }
+
+        // Intervalo entre tiros (segundos)
+        var shootCooldown: TimeInterval {
+            switch self {
+            case .shooter: return 2.0
+            case .boss:    return 2.5
+            default:       return .infinity
+            }
+        }
+
+        // Alcance mínimo para atirar (fica longe do player)
+        var preferredRange: CGFloat {
+            switch self {
+            case .shooter: return 220
+            case .boss:    return 220
+            default:       return 0
             }
         }
     }
-    
-    // Animação do inimigo — nil até makeEnemy() injetar
-    var spriteComp: EnemySpriteComponent?
 
-    var type: EnemyType
-    init(type: EnemyType) { self.type = type }
+    let type: EnemyType
+    var spriteComp: EnemySpriteComponent?
+    
+    // Throttle para o som de ataque — evita repetição a cada frame de colisão
+    var canPlayAttackSound: Bool = true
+    var attackSoundCooldown: TimeInterval = 0
+
+    // Controle de tiro — só usado por .shooter e .boss
+    var lastShotTime: TimeInterval = 0
+
+    init(type: EnemyType) {
+        self.type = type
+    }
 }

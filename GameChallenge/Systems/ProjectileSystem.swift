@@ -57,4 +57,47 @@ class ProjectileSystem {
 
         return projectilesToRemove
     }
+    
+    func updateEnemyProjectiles(
+        projectiles: [Entity],
+        playerEntity: Entity,
+        deltaTime: TimeInterval
+    ) -> [Entity] {
+        var toRemove = [Entity]()
+
+        guard
+            let playerTransform = playerEntity.get(TransformComponent.self),
+            let playerHealth    = playerEntity.get(HealthComponent.self)
+        else { return toRemove }
+
+        for proj in projectiles {
+            guard
+                let transform = proj.get(TransformComponent.self),
+                let pComp     = proj.get(ProjectileComponent.self)
+            else { continue }
+
+            // Move
+            transform.node.position.x += pComp.direction.dx * pComp.speed * deltaTime
+            transform.node.position.y += pComp.direction.dy * pComp.speed * deltaTime
+
+            // Expira
+            pComp.lifetime -= deltaTime
+            if pComp.lifetime <= 0 {
+                toRemove.append(proj)
+                continue
+            }
+
+            // Colisão com player
+            let dist = hypot(
+                transform.node.position.x - playerTransform.node.position.x,
+                transform.node.position.y - playerTransform.node.position.y
+            )
+            if dist <= 28 {
+                playerHealth.current = Swift.max(0, playerHealth.current - pComp.damage)
+                toRemove.append(proj)
+            }
+        }
+
+        return toRemove
+    }
 }
