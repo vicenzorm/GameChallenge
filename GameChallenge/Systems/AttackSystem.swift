@@ -25,7 +25,7 @@ class AttackSystem {
         else { return }
 
         let origin = attackerTransform.node.position
-        let range  = isSpecial ? attackComp.range * 2.5 : attackComp.range
+        let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
 
         var didHitAny = false
@@ -49,11 +49,9 @@ class AttackSystem {
                 guard dot > 0 else { continue }
             }
 
-            // Aplica dano + animação + som por inimigo atingido
             health.current = Swift.max(0, health.current - damage)
             enemySystem.triggerDmg(enemy: enemy)
             SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
-
             didHitAny = true
         }
 
@@ -74,6 +72,46 @@ class AttackSystem {
         }
 
         attackComp.didApplyDamage = true
+    }
+
+    // MARK: - Special Attack (giro 360)
+    func startSpecialAttack(player: Entity, enemies: [Entity], scene: SKScene, enemySystem: EnemySystem) {
+        guard
+            let sprite    = player.get(SpriteComponent.self),
+            let transform = player.get(TransformComponent.self),
+            let attack    = player.get(AttackComponent.self)
+        else { return }
+
+        let node = transform.node
+
+        attack.isAttacking     = true
+        attack.didApplyDamage  = false
+
+        // Animação de giro: percorre as 4 direções rapidamente
+        let frames = [
+            sprite.attackDownTextures[0],
+            sprite.attackRightTextures[0],
+            sprite.attackUpTextures[0],
+            sprite.attackLeftTextures[0]
+        ]
+
+        let spinAnimation = SKAction.animate(with: frames, timePerFrame: 0.05)
+        let totalSpin     = SKAction.repeat(spinAnimation, count: 3)
+        let rotateNode    = SKAction.rotate(byAngle: .pi * 2, duration: 0.6)
+
+        node.run(SKAction.group([totalSpin, rotateNode])) {
+            attack.isAttacking = false
+            node.zRotation     = 0
+        }
+
+        // Aplica dano omnidirecional imediatamente
+        self.update(
+            attackerEntity: player,
+            enemies:        enemies,
+            scene:          scene,
+            isSpecial:      true,
+            enemySystem:    enemySystem
+        )
     }
 }
 
@@ -102,3 +140,4 @@ extension SpriteComponent.Direction {
         }
     }
 }
+
