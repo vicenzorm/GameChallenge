@@ -2,16 +2,12 @@
 //  AttackSystem.swift
 //  POC-2DGame
 //
-//  Created by Bernardo Garcia Fensterseifer on 12/03/26.
-//
 
 import SpriteKit
 import CoreMotion
 import Foundation
 
 class AttackSystem {
-    
-    
 
     func update(
         attackerEntity: Entity,
@@ -20,7 +16,6 @@ class AttackSystem {
         isSpecial: Bool = false,
         enemySystem: EnemySystem
     ) {
-        
         guard
             let attackComp        = attackerEntity.get(AttackComponent.self),
             attackComp.isAttacking,
@@ -33,35 +28,51 @@ class AttackSystem {
         let range  = isSpecial ? attackComp.range * 2.5 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
 
+        var didHitAny = false
 
-        var didHitEnemy = false
-        // Hit enemies in range
         for enemy in enemies {
-                guard
-                    let enemyTransform = enemy.get(TransformComponent.self),
-                    let health         = enemy.get(HealthComponent.self)
-                else { continue }
+            guard
+                let enemyTransform = enemy.get(TransformComponent.self),
+                let health         = enemy.get(HealthComponent.self)
+            else { continue }
 
-                let toEnemy = enemyTransform.node.position - origin
-                let dist    = toEnemy.length
+            let toEnemy = enemyTransform.node.position - origin
+            let dist    = toEnemy.length
 
-                guard dist <= range else { continue }
+            guard dist <= range else { continue }
 
-                if !isSpecial {
-                    let facingVector = sprite.lastDirection.vector
-                    let dot = facingVector.dx * toEnemy.normalized.dx
-                            + facingVector.dy * toEnemy.normalized.dy
-                    guard dot > 0 else { continue }
-                }
-
-                health.current = Swift.max(0, health.current - damage)
-                enemySystem.triggerDmg(enemy: enemy)   // ← substitui o colorize antigo
+            // Ataque normal: só acerta inimigos na metade frontal
+            if !isSpecial {
+                let facingVector = sprite.lastDirection.vector
+                let dot = facingVector.dx * toEnemy.normalized.dx
+                        + facingVector.dy * toEnemy.normalized.dy
+                guard dot > 0 else { continue }
             }
-        
-        if didHitEnemy {
-            SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)
+
+            // Aplica dano + animação + som por inimigo atingido
+            health.current = Swift.max(0, health.current - damage)
+            enemySystem.triggerDmg(enemy: enemy)
+            SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+
+            didHitAny = true
         }
-        
+
+        // Visual do hitbox — só aparece se acertou pelo menos um inimigo
+        if didHitAny {
+            attackComp.attackNode?.removeFromParent()
+            let arc = SKShapeNode(circleOfRadius: range)
+            arc.fillColor   = isSpecial
+                ? UIColor.cyan.withAlphaComponent(0.25)
+                : UIColor.white.withAlphaComponent(0.15)
+            arc.strokeColor = isSpecial ? .cyan : .white
+            arc.lineWidth   = 1.5
+            arc.position    = origin
+            arc.zPosition   = 5
+            scene.addChild(arc)
+            attackComp.attackNode = arc
+            arc.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+        }
+
         attackComp.didApplyDamage = true
     }
 }
@@ -81,7 +92,6 @@ private extension CGVector {
     }
 }
 
-// Converte a direção do sprite num vetor unitário para o dot product
 extension SpriteComponent.Direction {
     var vector: CGVector {
         switch self {

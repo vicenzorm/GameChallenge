@@ -83,6 +83,19 @@ enum AssetName {
         dmgBase:   "bix_dmg_",   dmgCount:   3,
         deathBase: "bix_die_",   deathCount: 3
     )
+    
+    static let skeleton = EnemyAsset(
+        flyBase:   "skeleton_walk_",    flyCount:   10,
+        dmgBase:   "skeleton_damage_",  dmgCount:   5,
+        deathBase: "skeleton_die_",     deathCount: 12
+    )
+    
+    // Assets extras do skeleton (atk não existe no EnemyAsset padrão)
+    static let skeletonAtkBase  = "skeleton_atk_"
+    static let skeletonAtkCount = 10
+    
+    static let yellowSkeletonAtkBase  = "yellowSkeleton_atk_"
+    static let yellowSkeletonAtkCount = 10
 }
 
 class EntityFactory {
@@ -154,22 +167,63 @@ class EntityFactory {
         let spriteSize: CGSize
         switch type {
         case .weak:
-            asset      = AssetName.bix
-            spriteSize = CGSize(width: 68, height: 68)
+            // Skeleton usa SkeletonSpriteComponent — fluxo diferente dos outros
+            let walkTextures = loadTextures(baseName: "skeleton_walk_",   count: 10)
+            let atkTextures  = loadTextures(baseName: "skeleton_atk_",    count: 10)
+            let dmgTextures  = loadTextures(baseName: "skeleton_damage_", count: 5)
+            let dieTextures  = loadTextures(baseName: "skeleton_die_",    count: 12)
+
+            let skeletonSize   = CGSize(width: 68, height: 68)
+            let node         = SKSpriteNode(texture: walkTextures.first)
+            node.size        = skeletonSize
+            node.position    = position
+            node.zPosition   = 7
+            scene.addChild(node)
+
+            let barWidth: CGFloat  = skeletonSize.width * 1.2
+            let barHeight: CGFloat = 5
+            let barBg = SKShapeNode(rectOf: CGSize(width: barWidth, height: barHeight), cornerRadius: 2)
+            barBg.fillColor   = UIColor(white: 0.2, alpha: 0.85)
+            barBg.strokeColor = .clear
+            barBg.position    = CGPoint(x: 0, y: skeletonSize.height / 2 + 8)
+            barBg.zPosition   = 1
+            node.addChild(barBg)
+
+            let barFill = SKShapeNode(rectOf: CGSize(width: barWidth - 2, height: barHeight - 2), cornerRadius: 1.5)
+            barFill.fillColor   = .green
+            barFill.strokeColor = .clear
+            barFill.zPosition   = 1
+            barBg.addChild(barFill)
+
+            let health = HealthComponent(max: EnemyComponent.EnemyType.weak.maxHealth)
+            health.healthBarBackground = barBg
+            health.healthBarFill       = barFill
+
+            entity.add(TransformComponent(node: node))
+            entity.add(health)
+            entity.add(MovementComponent(speed: EnemyComponent.EnemyType.weak.speed))
+            entity.add(EnemyComponent(type: .weak))
+            entity.add(SkeletonSpriteComponent(
+                walkTextures: walkTextures,
+                atkTextures:  atkTextures,
+                dmgTextures:  dmgTextures,
+                dieTextures:  dieTextures
+            ))
+            return entity  // ← retorno antecipado, sai do switch
         case .normal:
-            asset      = AssetName.bix          // ← troque por AssetName.seuNovoInimigo quando tiver
-            spriteSize = CGSize(width: 88, height: 88)
+            return makeYellowSkeletonEnemy(at: position, scene: scene)
         case .strong:
             asset      = AssetName.bix          // ← troque por AssetName.seuNovoInimigo quando tiver
-            spriteSize = CGSize(width: 128, height: 128)
+            spriteSize = CGSize(width: 88, height: 88)
         case .shooter:
             asset      = AssetName.bixShooter
-            spriteSize = CGSize(width: 72, height: 72)
+            spriteSize = CGSize(width: 58, height: 58)
         case .boss:
             asset      = AssetName.bixBoss
             spriteSize = CGSize(width: 200, height: 200)  // ← escala maior
+            
         }
-
+        
         // ── Carrega texturas ────────────────────────────────────────────────
         let flyTextures   = loadTextures(baseName: asset.flyBase,   count: asset.flyCount)
         let dmgTextures   = loadTextures(baseName: asset.dmgBase,   count: asset.dmgCount)
@@ -181,6 +235,19 @@ class EntityFactory {
         node.position  = position
         node.zPosition = 7
         scene.addChild(node)
+                
+        // ── Tint por tipo ────────────────────────────────────────────────────
+        // se quiser colorir os bixo
+//        switch type {
+//        case .strong:
+//            node.color            = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
+//            node.colorBlendFactor = 0.75
+//        case .shooter:
+//            node.color            = UIColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1)
+//            node.colorBlendFactor = 0.75
+//        default:
+//            break
+//        }
 
         // ── Health bar ──────────────────────────────────────────────────────
         let barWidth: CGFloat  = spriteSize.width * 1.2
@@ -216,6 +283,55 @@ class EntityFactory {
         return entity
     }
 
+    // MARK: YellowSkeleton (normal) — pipeline separado
+    private static func makeYellowSkeletonEnemy(at position: CGPoint, scene: SKScene) -> Entity {
+        let entity     = Entity()
+        let type       = EnemyComponent.EnemyType.normal
+        let spriteSize = CGSize(width: 68, height: 68)   // ← mesmo tamanho do .normal anterior
+
+        let walkTextures = loadTextures(baseName: "yellowSkeleton_walk_",   count: 10)
+        let atkTextures  = loadTextures(baseName: "yellowSkeleton_atk_",    count: 10)
+        let dmgTextures  = loadTextures(baseName: "yellowSkeleton_damage_", count: 5)
+        let dieTextures  = loadTextures(baseName: "yellowSkeleton_die_",    count: 12)
+
+        let node = SKSpriteNode(texture: walkTextures.first)
+        node.size      = spriteSize
+        node.position  = position
+        node.zPosition = 7
+        scene.addChild(node)
+
+        let barWidth: CGFloat  = spriteSize.width * 1.2
+        let barHeight: CGFloat = 5
+        let barBg = SKShapeNode(rectOf: CGSize(width: barWidth, height: barHeight), cornerRadius: 2)
+        barBg.fillColor   = UIColor(white: 0.2, alpha: 0.85)
+        barBg.strokeColor = .clear
+        barBg.position    = CGPoint(x: 0, y: spriteSize.height / 2 + 8)
+        barBg.zPosition   = 1
+        node.addChild(barBg)
+
+        let barFill = SKShapeNode(rectOf: CGSize(width: barWidth - 2, height: barHeight - 2), cornerRadius: 1.5)
+        barFill.fillColor   = .green
+        barFill.strokeColor = .clear
+        barFill.zPosition   = 1
+        barBg.addChild(barFill)
+
+        let health = HealthComponent(max: type.maxHealth)
+        health.healthBarBackground = barBg
+        health.healthBarFill       = barFill
+
+        entity.add(TransformComponent(node: node))
+        entity.add(health)
+        entity.add(MovementComponent(speed: type.speed))
+        entity.add(EnemyComponent(type: type))
+        entity.add(SkeletonSpriteComponent(
+            walkTextures: walkTextures,
+            atkTextures:  atkTextures,
+            dmgTextures:  dmgTextures,
+            dieTextures:  dieTextures
+        ))
+        return entity
+    }
+    
     // MARK: Coin
     static func makeCoin(at position: CGPoint, scene: SKScene) -> Entity {
         let entity = Entity()
@@ -363,7 +479,7 @@ class EntityFactory {
         let textures = loadTextures(baseName: "fireball_", count: 5)
 
         let node = SKSpriteNode(texture: textures.first)
-        node.size      = CGSize(width: 40, height: 40)  // ← ajuste ao tamanho do sprite
+        node.size      = CGSize(width: 48, height: 48)  // ← ajuste ao tamanho do sprite
         node.position  = position
         node.zPosition = 9
 
@@ -371,6 +487,7 @@ class EntityFactory {
         node.zRotation = atan2(direction.dy, direction.dx) - (.pi / 2)
 
         scene.addChild(node)
+        SoundManager.shared.play(SoundManager.shared.flameShot, on: node)
 
         // Animação em loop enquanto voa
         let animate = SKAction.animate(with: textures, timePerFrame: 0.1)  // ← ajuste a velocidade

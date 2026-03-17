@@ -24,6 +24,11 @@ final class SoundManager {
     let enemyKilled = SKAction.playSoundFileNamed("enemyKilled.wav", waitForCompletion: false)
 
     let footstep = SKAction.playSoundFileNamed("footstep.wav", waitForCompletion: false)
+    
+    let swordAttack1  = SKAction.playSoundFileNamed("swordAttack1.wav",  waitForCompletion: false)  // skeleton
+    let swordAttack2  = SKAction.playSoundFileNamed("swordAttack2.wav",  waitForCompletion: false)  // yellowSkeleton
+    let flameShot     = SKAction.playSoundFileNamed("flameShot.wav",     waitForCompletion: false)  // fireball
+    let monsterBite   = SKAction.playSoundFileNamed("monsterBite.wav",   waitForCompletion: false)  // bix
 
     private init() {}
 

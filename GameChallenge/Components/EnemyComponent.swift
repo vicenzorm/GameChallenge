@@ -91,6 +91,10 @@ class EnemyComponent: Component {
 
     let type: EnemyType
     var spriteComp: EnemySpriteComponent?
+    
+    // Throttle para o som de ataque — evita repetição a cada frame de colisão
+    var canPlayAttackSound: Bool = true
+    var attackSoundCooldown: TimeInterval = 0
 
     // Controle de tiro — só usado por .shooter e .boss
     var lastShotTime: TimeInterval = 0

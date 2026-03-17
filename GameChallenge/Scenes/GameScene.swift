@@ -393,7 +393,7 @@ class GameScene: SKScene {
         
         // 8. Enemy → player collision
         collisionSystem.checkEnemyPlayerCollisions(
-            playerEntity: playerEntity, enemies: enemyEntities, deltaTime: dt)
+            playerEntity: playerEntity, enemies: enemyEntities, deltaTime: dt, enemySystem: enemySystem)
         
         // 9. Coin collection
         let collected = collisionSystem.checkCoinCollection(

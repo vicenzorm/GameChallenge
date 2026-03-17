@@ -37,6 +37,13 @@ class EnemyAISystem {
                 : .zero
 
             if enemyComp.type.canShoot {
+                // No loop de enemies, antes do bloco de tiro, adicione:
+                if !enemyComp.canPlayAttackSound {
+                    enemyComp.attackSoundCooldown -= deltaTime
+                    if enemyComp.attackSoundCooldown <= 0 {
+                        enemyComp.canPlayAttackSound = true
+                    }
+                }
                 // Shooter/boss mantém distância preferida do player
                 if dist > enemyComp.type.preferredRange {
                     // Ainda longe — se aproxima
