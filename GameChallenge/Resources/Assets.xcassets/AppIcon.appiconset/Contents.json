@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "pixel-art-artwork-style-digital.jpg",
+      "filename" : "icon game.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "pixel-art-artwork-style-digital 1.jpg",
+      "filename" : "icon game 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "pixel-art-artwork-style-digital 2.jpg",
+      "filename" : "icon game 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

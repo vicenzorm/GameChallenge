@@ -2,16 +2,12 @@
 //  AttackSystem.swift
 //  POC-2DGame
 //
-//  Created by Bernardo Garcia Fensterseifer on 12/03/26.
-//
 
 import SpriteKit
 import CoreMotion
 import Foundation
 
 class AttackSystem {
-    
-    
 
     func update(
         attackerEntity: Entity,
@@ -20,7 +16,6 @@ class AttackSystem {
         isSpecial: Bool = false,
         enemySystem: EnemySystem
     ) {
-        
         guard
             let attackComp        = attackerEntity.get(AttackComponent.self),
             attackComp.isAttacking,
@@ -30,39 +25,93 @@ class AttackSystem {
         else { return }
 
         let origin = attackerTransform.node.position
-        let range  = isSpecial ? attackComp.range * 2.5 : attackComp.range
+        let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
 
+        var didHitAny = false
 
-        var didHitEnemy = false
-        // Hit enemies in range
         for enemy in enemies {
-                guard
-                    let enemyTransform = enemy.get(TransformComponent.self),
-                    let health         = enemy.get(HealthComponent.self)
-                else { continue }
+            guard
+                let enemyTransform = enemy.get(TransformComponent.self),
+                let health         = enemy.get(HealthComponent.self)
+            else { continue }
 
-                let toEnemy = enemyTransform.node.position - origin
-                let dist    = toEnemy.length
+            let toEnemy = enemyTransform.node.position - origin
+            let dist    = toEnemy.length
 
-                guard dist <= range else { continue }
+            guard dist <= range else { continue }
 
-                if !isSpecial {
-                    let facingVector = sprite.lastDirection.vector
-                    let dot = facingVector.dx * toEnemy.normalized.dx
-                            + facingVector.dy * toEnemy.normalized.dy
-                    guard dot > 0 else { continue }
-                }
-
-                health.current = Swift.max(0, health.current - damage)
-                enemySystem.triggerDmg(enemy: enemy)   // ← substitui o colorize antigo
+            // Ataque normal: só acerta inimigos na metade frontal
+            if !isSpecial {
+                let facingVector = sprite.lastDirection.vector
+                let dot = facingVector.dx * toEnemy.normalized.dx
+                        + facingVector.dy * toEnemy.normalized.dy
+                guard dot > 0 else { continue }
             }
-        
-        if didHitEnemy {
-            SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)
+
+            health.current = Swift.max(0, health.current - damage)
+            enemySystem.triggerDmg(enemy: enemy)
+            SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+            didHitAny = true
         }
-        
+
+        // Visual do hitbox — só aparece se acertou pelo menos um inimigo
+        if didHitAny {
+            attackComp.attackNode?.removeFromParent()
+            let arc = SKShapeNode(circleOfRadius: range)
+            arc.fillColor   = isSpecial
+                ? UIColor.cyan.withAlphaComponent(0.25)
+                : UIColor.white.withAlphaComponent(0.15)
+            arc.strokeColor = isSpecial ? .cyan : .white
+            arc.lineWidth   = 1.5
+            arc.position    = origin
+            arc.zPosition   = 5
+            scene.addChild(arc)
+            attackComp.attackNode = arc
+            arc.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+        }
+
         attackComp.didApplyDamage = true
+    }
+
+    // MARK: - Special Attack (giro 360)
+    func startSpecialAttack(player: Entity, enemies: [Entity], scene: SKScene, enemySystem: EnemySystem) {
+        guard
+            let sprite    = player.get(SpriteComponent.self),
+            let transform = player.get(TransformComponent.self),
+            let attack    = player.get(AttackComponent.self)
+        else { return }
+
+        let node = transform.node
+
+        attack.isAttacking     = true
+        attack.didApplyDamage  = false
+
+        // Animação de giro: percorre as 4 direções rapidamente
+        let frames = [
+            sprite.attackDownTextures[0],
+            sprite.attackRightTextures[0],
+            sprite.attackUpTextures[0],
+            sprite.attackLeftTextures[0]
+        ]
+
+        let spinAnimation = SKAction.animate(with: frames, timePerFrame: 0.05)
+        let totalSpin     = SKAction.repeat(spinAnimation, count: 3)
+        let rotateNode    = SKAction.rotate(byAngle: .pi * 2, duration: 0.6)
+
+        node.run(SKAction.group([totalSpin, rotateNode])) {
+            attack.isAttacking = false
+            node.zRotation     = 0
+        }
+
+        // Aplica dano omnidirecional imediatamente
+        self.update(
+            attackerEntity: player,
+            enemies:        enemies,
+            scene:          scene,
+            isSpecial:      true,
+            enemySystem:    enemySystem
+        )
     }
 }
 
@@ -81,7 +130,6 @@ private extension CGVector {
     }
 }
 
-// Converte a direção do sprite num vetor unitário para o dot product
 extension SpriteComponent.Direction {
     var vector: CGVector {
         switch self {
@@ -92,3 +140,4 @@ extension SpriteComponent.Direction {
         }
     }
 }
+

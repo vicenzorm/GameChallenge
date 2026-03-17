@@ -29,6 +29,9 @@ class HUD: SKNode {
 
     private let barMaxW: CGFloat = 160
     private let screenSize: CGSize
+    
+    private var continueLabel: SKLabelNode?
+    private var continueButtonNode: SKShapeNode?
 
     init(screenSize: CGSize) {
         self.screenSize = screenSize
@@ -262,6 +265,35 @@ class HUD: SKNode {
         ))
         return root
     }
+    
+    private func continueButtonText() -> String {
+
+        if AdManager.shared.canShowAd() {
+            return "Continue"
+        }
+
+        let remaining = Int(AdManager.shared.remainingCooldown())
+        let minutes = remaining / 60
+        let seconds = remaining % 60
+
+        return String(format: "Continue (%02d:%02d)", minutes, seconds)
+    }
+    
+    func updateContinueCooldown() {
+        guard let label = continueLabel else { return }
+
+        if AdManager.shared.canShowAd() {
+            label.text = "Continue"
+            continueButtonNode?.fillColor = UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
+            continueButtonNode?.name = "continueButton"
+            label.name = "continueButton"
+        } else {
+            label.text = continueButtonText()
+            continueButtonNode?.fillColor = .darkGray
+            continueButtonNode?.name = "continueDisabled"
+            label.name = "continueDisabled"
+        }
+    }
 
     // MARK: - Game Over Overlay
 
@@ -283,9 +315,40 @@ class HUD: SKNode {
         title.zPosition = 1
         root.addChild(title)
 
+        let canShow = AdManager.shared.canShowAd()
+
+        let button = SKShapeNode(rectOf: CGSize(width: 210, height: 48), cornerRadius: 12)
+
+        button.fillColor = canShow
+            ? UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
+            : UIColor.darkGray
+
+        button.strokeColor = UIColor(white: 1, alpha: 0.5)
+        button.lineWidth = 1.5
+        button.position = CGPoint(x: 0, y: 0)
+        button.zPosition = 1
+        button.name = canShow ? "continueButton" : "continueDisabled"
+
+        let lbl = SKLabelNode(text: continueButtonText())
+        lbl.fontName = "AvenirNext-Heavy"
+        lbl.fontSize = 18
+        lbl.fontColor = .white
+        lbl.verticalAlignmentMode = .center
+        lbl.horizontalAlignmentMode = .center
+        lbl.name = button.name
+
+        button.addChild(lbl)
+
+        // guardar referências para atualizar depois
+        continueLabel = lbl
+        continueButtonNode = button
+
+        root.addChild(button)
+
         root.addChild(makeOverlayButton(
             text: "Continue",
-            pos: CGPoint(x: -183, y: -50),
+            color: UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95),
+            pos: CGPoint(x: 0, y: 0),
             name: "continueButton"))
         
         root.addChild(makeOverlayButton(

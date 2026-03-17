@@ -15,6 +15,8 @@ class HealthComponent: Component {
     var healthBarBackground: SKShapeNode?
     var healthBarFill: SKShapeNode?
 
+    var isInvulnerable: Bool = false
+    
     init(max: CGFloat) {
         self.max = max
         self.current = max

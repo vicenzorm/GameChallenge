@@ -43,6 +43,7 @@ class GameScene: SKScene {
     private var boxEntities: [Entity] = []
     private var projectileEntities: [Entity] = []
     private var dyingEnemies: [Entity] = []
+    private var enemyProjectileEntities: [Entity] = []
     
     // Systems
     private let movementSystem   = MovementSystem()
@@ -69,10 +70,12 @@ class GameScene: SKScene {
     
     // Pause state
     private var isPausedByPlayer = false
-//    private var pauseNode: Pause!
+    // private var pauseNode: Pause!
+    
+    private var lastCooldownUpdate: TimeInterval = 0
     
     // World size
-    private let worldSize = CGSize(width: 2400, height: 2400)
+    private let worldSize = CGSize(width: 1800, height: 1800)
     
     override init(size: CGSize) {
 //        pauseNode = Pause(size: size)
@@ -109,31 +112,43 @@ class GameScene: SKScene {
     
     /// Builds the visible world (tiled background + border) and adds it to the scene.
     private func setupWorld() {
-        // Tiled background using the asset image
-        let tileSize = CGSize(width: 256, height: 256)   // ← adjust to match your image size
-        let cols = Int(ceil(worldSize.width  / tileSize.width))  + 1
-        let rows = Int(ceil(worldSize.height / tileSize.height)) + 1
-        
-        for row in 0...rows {
-            for col in 0...cols {
-                let tile = SKSpriteNode(imageNamed: kBackgroundAsset)
-                tile.size      = tileSize
-                tile.position  = CGPoint(
-                    x: -worldSize.width  / 2 + CGFloat(col) * tileSize.width  - tileSize.width  / 2,
-                    y: -worldSize.height / 2 + CGFloat(row) * tileSize.height - tileSize.height / 2
-                )
-                tile.zPosition = -10
-                addChild(tile)
-            }
-        }
-        
-        // World border
+        let bg = SKSpriteNode(imageNamed: kBackgroundAsset)
+        bg.size      = worldSize
+        bg.position  = .zero   // anchorPoint 0.5,0.5 → centrado na origem
+        bg.zPosition = -10
+        addChild(bg)
+
+        // Borda visual opcional — remove se não quiser
         let border = SKShapeNode(rectOf: worldSize)
-        border.strokeColor = UIColor(white: 0.5, alpha: 0.8)
+        border.strokeColor = UIColor(white: 0.4, alpha: 0.6)
         border.fillColor   = .clear
         border.lineWidth   = 4
         border.zPosition   = -5
         addChild(border)
+    }
+    
+    /// Mantém a câmera dentro dos limites do mundo para não mostrar além do background.
+    private func clampCamera() {
+        guard let view = self.view else { return }
+
+        // Metade do que a câmera enxerga na tela (em pontos do mundo)
+        let visibleHalfW = view.bounds.width  / 2
+        let visibleHalfH = view.bounds.height / 2
+
+        // Limites: a câmera não pode ir além de onde o background acaba
+        let minX = -worldSize.width  / 2 + visibleHalfW
+        let maxX =  worldSize.width  / 2 - visibleHalfW
+        let minY = -worldSize.height / 2 + visibleHalfH
+        let maxY =  worldSize.height / 2 - visibleHalfH
+
+        var camPos = cameraNode.position
+
+        // Se o mundo for menor que a tela num eixo, centraliza naquele eixo
+        if minX > maxX { camPos.x = 0 } else { camPos.x = camPos.x.clamped(to: minX...maxX) }
+        if minY > maxY { camPos.y = 0 } else { camPos.y = camPos.y.clamped(to: minY...maxY) }
+
+        cameraNode.position  = camPos
+        pauseNode.position   = camPos
     }
     
     /// Creates and adds the camera node, setting its zPosition and linking it to the scene.
@@ -192,7 +207,7 @@ class GameScene: SKScene {
         waveSystem.onWaveStart = { [weak self] wave in
             self?.hud.updateWave(wave)
             self?.showWaveBanner(wave: wave)
-            self?.reshuffleBoxes()  
+            self?.reshuffleBoxes()
         }
         waveSystem.onWaveEnd = { [weak self] completedWave in
             // Exibe cutscene como overlay sobre o SKView — sem trocar de cena.
@@ -218,20 +233,20 @@ class GameScene: SKScene {
         let count      = 40          // tweak to taste
         let margin: CGFloat = 100    // min distance from world edge
         let clearRadius: CGFloat = 200  // spawn-free zone around the player start (0,0)
-
+        
         var placed = 0
         var attempts = 0
         let maxAttempts = count * 10
-
+        
         while placed < count && attempts < maxAttempts {
             attempts += 1
             let x = CGFloat.random(in: -worldSize.width  / 2 + margin ... worldSize.width  / 2 - margin)
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
             let pos = CGPoint(x: x, y: y)
-
+            
             // Keep the player start area clear
             guard hypot(pos.x, pos.y) > clearRadius else { continue }
-
+            
             boxEntities.append(EntityFactory.makeBox(at: pos, scene: self))
             placed += 1
         }
@@ -244,11 +259,11 @@ class GameScene: SKScene {
             box.get(TransformComponent.self)?.node.removeFromParent()
         }
         boxEntities.removeAll()
-
+        
         // Spawn a new layout using the same logic as setupBoxes()
         setupBoxes()
     }
-
+    
     /// Connects coin spawn system callbacks to spawn coins in the scene.
     private func setupCoinCallbacks() {
         coinSpawnSystem.onSpawnCoin = { [weak self] pos in
@@ -259,6 +274,12 @@ class GameScene: SKScene {
     
     /// Main game loop: gathers input, updates systems in a deterministic order, and syncs the HUD.
     override func update(_ currentTime: TimeInterval) {
+        
+        if currentTime - lastCooldownUpdate > 1 {
+            lastCooldownUpdate = currentTime
+            hud.updateContinueCooldown()
+        }
+        
         guard !isPausedByPlayer else { return }
         let dt = calculateDeltaTime(currentTime)
         
@@ -279,22 +300,35 @@ class GameScene: SKScene {
         )
         
         // 3. Enemy AI
-        enemyAISystem.update(enemies: enemyEntities, playerEntity: playerEntity, deltaTime: dt)
+        enemyAISystem.update(
+            enemies: enemyEntities,
+            playerEntity: playerEntity,
+            deltaTime: dt,
+            currentTime: currentTime,
+            onEnemyShoot: { [weak self] enemy, direction in
+                guard let self,
+                      let pos = enemy.get(TransformComponent.self)?.node.position
+                else { return }
+                let proj = EntityFactory.makeEnemyProjectile(at: pos, direction: direction, scene: self)
+                self.enemyProjectileEntities.append(proj)
+            }
+        )
         
         // 4. Movement system moves all dynamic entities (player + enemies) using velocity/acceleration from components
         movementSystem.update(entities: [playerEntity!] + enemyEntities, deltaTime: dt)
-
+        
         // 4b. Box collision — push movers out of indestructible boxes
         boxSystem.update(movers: [playerEntity!] + enemyEntities, boxes: boxEntities)
-
-        // 5. Camera follows player
+        
+        // 5. Camera follows player — clamped to world bounds
         if let node = playerEntity.get(TransformComponent.self)?.node {
             cameraNode.position = node.position
-//            pauseNode.position = node.position
+            clampCamera()   // ← aplica o clamp depois de seguir o player
         }
         
         // 6. Attack & Shooting
-        if let attack = playerEntity.get(AttackComponent.self) {
+
+        if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
 
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
@@ -307,6 +341,22 @@ class GameScene: SKScene {
                 )
                 hud.flashButtonA()
             }
+          
+            if inputSystem.specialPressed && pl.specialReady {
+                    inputSystem.specialPressed = false
+                    
+                    attackSystem.startSpecialAttack(
+                        player: playerEntity,
+                        enemies: enemyEntities,
+                        scene: self,
+                        enemySystem: enemySystem
+                    )
+                    
+                    // Zera a barra no componente e no HUD
+                    pl.killStreak = 0
+                    pl.specialReady = false
+                    hud.updateSpecial(killStreak: 0, isReady: false)
+                }
 
             // Especial (Botão B) — só executa se isAttacking E isSpecialAttack estão ativos
             if attack.isAttacking,
@@ -320,7 +370,7 @@ class GameScene: SKScene {
                     enemySystem: enemySystem
                 )
             }
-
+            
             // Tiro (Joystick direito) — estava faltando
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
@@ -340,13 +390,25 @@ class GameScene: SKScene {
             projectiles: projectileEntities,
             enemies: enemyEntities,
             deltaTime: dt,
-            enemySystem: enemySystem 
+            enemySystem: enemySystem
         )
         for proj in deadProjectiles {
             proj.get(TransformComponent.self)?.node.removeFromParent()
         }
         let deadProjIDs = Set(deadProjectiles.map { $0.id })
         projectileEntities.removeAll { deadProjIDs.contains($0.id) }
+        
+        // 6.6 Projéteis inimigos → causam dano ao player
+        let deadEnemyProj = projectileSystem.updateEnemyProjectiles(
+            projectiles: enemyProjectileEntities,
+            playerEntity: playerEntity,
+            deltaTime: dt
+        )
+        for proj in deadEnemyProj {
+            proj.get(TransformComponent.self)?.node.removeFromParent()
+        }
+        let deadEnemyProjIDs = Set(deadEnemyProj.map { $0.id })
+        enemyProjectileEntities.removeAll { deadEnemyProjIDs.contains($0.id) }
         
         // 7. Health bars
         healthSystem.update(entities: enemyEntities)
@@ -356,7 +418,7 @@ class GameScene: SKScene {
         
         // 8. Enemy → player collision
         collisionSystem.checkEnemyPlayerCollisions(
-            playerEntity: playerEntity, enemies: enemyEntities, deltaTime: dt)
+            playerEntity: playerEntity, enemies: enemyEntities, deltaTime: dt, enemySystem: enemySystem)
         
         // 9. Coin collection
         let collected = collisionSystem.checkCoinCollection(
@@ -385,7 +447,7 @@ class GameScene: SKScene {
         }
         let deadIDs = Set(dead.map { $0.id })
         enemyEntities.removeAll { deadIDs.contains($0.id) }
-
+        
         // Remove da lista de moribundos os que já tiveram o nó removido da cena
         dyingEnemies.removeAll {
             $0.get(TransformComponent.self)?.node.parent == nil
@@ -416,6 +478,8 @@ class GameScene: SKScene {
                               sceneSize: worldSize, playerPosition: node.position)
         }
         coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
+        
+        
     }
     
     /// Toggles pause state and updates HUD accordingly.
@@ -467,32 +531,57 @@ class GameScene: SKScene {
         hud.showGameOver()
     }
     
-    private func handleContinue(view: SKView) {
+    private func clearEnemiesAroundPlayer() {
+        
+        for enemy in enemyEntities {
+            enemy.get(TransformComponent.self)?.node.run(.sequence([
+                .scale(to: 0.1, duration: 0.15),
+                .removeFromParent()
+            ]))
+        }
 
+        enemyEntities.removeAll()
+    }
+    
+    private func handleContinue(view: SKView) {
+        
         guard let vc = view.window?.rootViewController else {
             print("Não encontrou ViewController")
             return
         }
-
+        
         AdManager.shared.showAd(from: vc) { [weak self] in
             guard let self = self else { return }
-
+            
             print("Player reviveu após anúncio")
-
+            
             // revive o player
+
             if let health = self.playerEntity.get(HealthComponent.self) {
                 health.current = health.max
+                health.isInvulnerable = true
+                
+                let sprite = self.playerEntity.get(TransformComponent.self)?.node
+                sprite?.alpha = 0.5
+                
+                self.run(.wait(forDuration: 2.0)) {
+                    health.isInvulnerable = false
+                    sprite?.alpha = 1.0
+                }
             }
-
+            
             // remove game over
             self.hud.hideGameOver()
-
+            
             // retoma jogo
-            self.isPausedByPlayer = false
 
+            self.clearEnemiesAroundPlayer()
+
+            self.hud.hideGameOver()
+            self.isPausedByPlayer = false
+            
             self.movementJoystick.isHidden = false
             self.movementJoystick.isUserInteractionEnabled = true
-
             self.attackJoystick.isHidden = false
             self.attackJoystick.isUserInteractionEnabled = true
         }
@@ -594,4 +683,11 @@ class GameScene: SKScene {
     
     // MARK: Helpers
     private var lastUpdateTime: TimeInterval = 0
+}
+
+// MARK: - Comparable clamp helper
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
+    }
 }

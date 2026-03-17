@@ -10,7 +10,7 @@ import CoreMotion
 import Foundation
 
 class WaveSystem {
-    private(set) var currentWave: Int = 0
+    private(set) var currentWave: Int = 10
     private(set) var isSpawning: Bool = false
 
     private var spawnTimer:        TimeInterval = 0
@@ -24,7 +24,7 @@ class WaveSystem {
     var onWaveCountdown: ((Int) -> Void)?   // fires each second during break
 
     struct WaveConfig {
-        let weak: Int; let normal: Int; let strong: Int
+        let weak: Int; let normal: Int; let strong: Int; let shooter: Int
         let spawnInterval: TimeInterval
         static let betweenWaveDelay: TimeInterval = 5.0
 
@@ -33,7 +33,9 @@ class WaveSystem {
             return WaveConfig(
                 weak:          2 + w * 3,
                 normal:        w > 2 ? (w - 2) * 2 : 0,
-                strong:        w > 5 ? (w - 5) : 0,
+                strong:        w > 5 ? (w - 5)     : 0,
+                // Shooters aparecem a partir da onda 3, máximo de 3 por onda
+                shooter:       w > 2 ? Swift.min((w - 2), 3) : 0,
                 spawnInterval: Swift.max(0.3, 1.5 - Double(w) * 0.06)
             )
         }
@@ -44,15 +46,19 @@ class WaveSystem {
         let config = WaveConfig.config(forWave: currentWave)
 
         var queue: [EnemyComponent.EnemyType] = []
-        queue += Array(repeating: .weak,   count: config.weak)
-        queue += Array(repeating: .normal, count: config.normal)
-        queue += Array(repeating: .strong, count: config.strong)
+        queue += Array(repeating: .weak,    count: config.weak)
+        queue += Array(repeating: .normal,  count: config.normal)
+        queue += Array(repeating: .strong,  count: config.strong)
+        queue += Array(repeating: .shooter, count: config.shooter)
         queue.shuffle()
 
-        currentSpawnQueue   = queue
-        spawnTimer          = 0
-        isSpawning          = true
-        waitingForNextWave  = false
+        // Boss sempre spawna por último, sozinho no final da fila
+        queue.append(.boss)
+
+        currentSpawnQueue  = queue
+        spawnTimer         = 0
+        isSpawning         = true
+        waitingForNextWave = false
 
         onWaveStart?(currentWave)
     }
