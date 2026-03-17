@@ -229,6 +229,48 @@ class EntityFactory {
         return entity
     }
     
+    // MARK: Consumables
+    
+    static func makeConsumable(type: ItemComponent.ItemType, at position: CGPoint, scene: SKScene) -> Entity{
+        
+        let entity = Entity()
+        
+        let node = SKShapeNode(circleOfRadius: 16)
+        
+        switch type{
+            case .healthPotion: node.fillColor = .red
+            case .specialCharge: node.fillColor = .blue
+            case .killAll: node.fillColor = .black
+        }
+        
+        node.position = position
+        node.zPosition = 5
+        scene.addChild(node)
+        
+        let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.8)
+        node.run(.repeatForever(.sequence([moveUp, moveUp.reversed()])))
+
+        entity.add(TransformComponent(node: node))
+        
+        // Provide an actual CGFloat value for rarity.
+        // Example policy: common (health) = 0.2, uncommon (special) = 0.1, rare (killAll) = 0.02
+        let rarity: CGFloat
+        switch type {
+        case .healthPotion:
+            rarity = 0.2
+        case .specialCharge:
+            rarity = 0.1
+        case .killAll:
+            rarity = 0.02
+        }
+        
+        entity.add(ItemComponent(type: type, rarity: rarity))
+        
+        return entity
+        
+        
+    }
+    
     // MARK: - Helper Methods
     
     /// Loads a sequence of textures with a base name and count
