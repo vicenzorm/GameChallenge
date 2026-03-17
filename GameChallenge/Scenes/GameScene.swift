@@ -69,6 +69,8 @@ class GameScene: SKScene {
     private var isPausedByPlayer = false
     private var pauseNode: Pause!
     
+    private var lastCooldownUpdate: TimeInterval = 0
+    
     // World size
     private let worldSize = CGSize(width: 2400, height: 2400)
     
@@ -257,6 +259,12 @@ class GameScene: SKScene {
     
     /// Main game loop: gathers input, updates systems in a deterministic order, and syncs the HUD.
     override func update(_ currentTime: TimeInterval) {
+        
+        if currentTime - lastCooldownUpdate > 1 {
+            lastCooldownUpdate = currentTime
+            hud.updateContinueCooldown()
+        }
+        
         guard !isPausedByPlayer else { return }
         let dt = calculateDeltaTime(currentTime)
         
@@ -376,6 +384,8 @@ class GameScene: SKScene {
                               sceneSize: worldSize, playerPosition: node.position)
         }
         coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
+        
+        
     }
     
     /// Toggles pause state and updates HUD accordingly.
@@ -427,6 +437,18 @@ class GameScene: SKScene {
         hud.showGameOver()
     }
     
+    private func clearEnemiesAroundPlayer() {
+        
+        for enemy in enemyEntities {
+            enemy.get(TransformComponent.self)?.node.run(.sequence([
+                .scale(to: 0.1, duration: 0.15),
+                .removeFromParent()
+            ]))
+        }
+
+        enemyEntities.removeAll()
+    }
+    
     private func handleContinue(view: SKView) {
 
         guard let vc = view.window?.rootViewController else {
@@ -437,22 +459,26 @@ class GameScene: SKScene {
         AdManager.shared.showAd(from: vc) { [weak self] in
             guard let self = self else { return }
 
-            print("Player reviveu após anúncio")
-
-            // revive o player
             if let health = self.playerEntity.get(HealthComponent.self) {
                 health.current = health.max
+                health.isInvulnerable = true
+                
+                let sprite = self.playerEntity.get(TransformComponent.self)?.node
+                sprite?.alpha = 0.5
+                
+                self.run(.wait(forDuration: 2.0)) {
+                    health.isInvulnerable = false
+                    sprite?.alpha = 1.0
+                }
             }
 
-            // remove game over
-            self.hud.hideGameOver()
+            self.clearEnemiesAroundPlayer()
 
-            // retoma jogo
+            self.hud.hideGameOver()
             self.isPausedByPlayer = false
 
             self.movementJoystick.isHidden = false
             self.movementJoystick.isUserInteractionEnabled = true
-
             self.attackJoystick.isHidden = false
             self.attackJoystick.isUserInteractionEnabled = true
         }

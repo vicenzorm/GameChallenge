@@ -30,8 +30,16 @@ class CollisionSystem {
 
             let minDist: CGFloat = 24 + enemyComp.type.radius
             if pPos.distance(to: enemyTransform.node.position) < minDist {
-                playerHealth.current = Swift.max(0,
-                    playerHealth.current - enemyComp.type.damage * CGFloat(deltaTime))
+
+                if playerHealth.isInvulnerable {
+                    print("Colidiu mas tá protegido!")
+                    continue
+                }
+
+                playerHealth.current = Swift.max(
+                    0,
+                    playerHealth.current - enemyComp.type.damage * CGFloat(deltaTime)
+                )
             }
         }
     }
