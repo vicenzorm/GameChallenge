@@ -127,7 +127,11 @@ class MenuScene: SKScene {
                     print("Leaderboard")
                     
                 case "settingsButton", "settingsLabel":
-                    print("Settings")
+                    let settingsScene = SettingsScene(size: self.size)
+                    settingsScene.scaleMode = self.scaleMode
+                    self.run(specialSequence) {
+                        self.view?.presentScene(settingsScene)
+                    }
                     
                 default:
                     break
