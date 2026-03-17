@@ -10,9 +10,25 @@ import GoogleMobileAds
 class AdManager {
 
     static let shared = AdManager()
-
     var rewardedAd: RewardedAd?
-
+    var onAdDismissed: (() -> Void)?
+    
+    private let cooldown: TimeInterval = 600
+    private var lastAdTime: TimeInterval = 0
+    
+    func canShowAd() -> Bool{
+        Date().timeIntervalSince1970 - lastAdTime >= cooldown
+    }
+    
+    func remainingCooldown() -> TimeInterval{
+        let remaining = cooldown - (Date().timeIntervalSince1970 - lastAdTime)
+        return max(0, remaining)
+    }
+    
+    func markAdUsed(){
+        lastAdTime = Date().timeIntervalSince1970
+    }
+    
     func loadAd() {
         
         let request = Request()
@@ -31,6 +47,7 @@ class AdManager {
             print("Anúncio carregado!")
 
             self.rewardedAd = ad
+            
         }
     }
     
@@ -43,6 +60,8 @@ class AdManager {
         
         ad.present(from: viewController){
             print("Usuário ganhou recompensa")
+            
+            self.markAdUsed()
             reward()
         }
         
