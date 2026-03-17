@@ -148,7 +148,7 @@ class GameScene: SKScene {
         if minY > maxY { camPos.y = 0 } else { camPos.y = camPos.y.clamped(to: minY...maxY) }
 
         cameraNode.position  = camPos
-        pauseNode.position   = camPos
+//        pauseNode.position   = camPos
     }
     
     /// Creates and adds the camera node, setting its zPosition and linking it to the scene.

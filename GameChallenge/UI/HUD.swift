@@ -317,39 +317,10 @@ class HUD: SKNode {
 
         let canShow = AdManager.shared.canShowAd()
 
-        let button = SKShapeNode(rectOf: CGSize(width: 210, height: 48), cornerRadius: 12)
-
-        button.fillColor = canShow
-            ? UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
-            : UIColor.darkGray
-
-        button.strokeColor = UIColor(white: 1, alpha: 0.5)
-        button.lineWidth = 1.5
-        button.position = CGPoint(x: 0, y: 0)
-        button.zPosition = 1
-        button.name = canShow ? "continueButton" : "continueDisabled"
-
-        let lbl = SKLabelNode(text: continueButtonText())
-        lbl.fontName = "AvenirNext-Heavy"
-        lbl.fontSize = 18
-        lbl.fontColor = .white
-        lbl.verticalAlignmentMode = .center
-        lbl.horizontalAlignmentMode = .center
-        lbl.name = button.name
-
-        button.addChild(lbl)
-
-        // guardar referências para atualizar depois
-        continueLabel = lbl
-        continueButtonNode = button
-
-        root.addChild(button)
-
         root.addChild(makeOverlayButton(
             text: "Continue",
-            color: UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: 0),
-            name: "continueButton"))
+            pos: CGPoint(x: -183, y: -50),
+            name: canShow ? "continueButton" : "continueDisabled"))
         
         root.addChild(makeOverlayButton(
             text: "Restart",
