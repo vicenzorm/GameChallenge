@@ -86,7 +86,7 @@ class PlayerSystem {
             sprite.isSpecialAttack = false
             sprite.currentFrame   = 0
             sprite.lastFrameTime  = currentTime
-            node.setScale(1.25)
+            node.setScale(1.5)
             node.texture = sprite.currentAttackTextures.first
             
             SoundManager.shared.play(SoundManager.shared.attack1, on: node)
@@ -102,7 +102,7 @@ class PlayerSystem {
             sprite.isSpecialAttack = true
             sprite.currentFrame   = 0
             sprite.lastFrameTime  = currentTime
-            node.setScale(1.3)
+            node.setScale(1.5)
             node.texture = sprite.attackTextures.first
         }
         

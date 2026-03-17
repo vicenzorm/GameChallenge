@@ -52,6 +52,25 @@ enum AssetName {
     static let enemyStrong = "enemy_strong"
     static let coin        = "coin_sprite"
     static let box         = "box_sprite"
+    
+    // MARK: - Enemy sprites
+    // ─────────────────────────────────────────────────────────────────
+    // Para adicionar um novo tipo de inimigo no futuro:
+    // 1. Adicione um novo EnemyAsset abaixo seguindo o mesmo padrão
+    // 2. Adicione o novo caso em EnemyComponent.EnemyType
+    // 3. Em makeEnemy(), adicione o novo case no switch de `assetConfig`
+    // ─────────────────────────────────────────────────────────────────
+    struct EnemyAsset {
+        let flyBase:   String; let flyCount:   Int
+        let dmgBase:   String; let dmgCount:   Int
+        let deathBase: String; let deathCount: Int
+    }
+    
+    static let bix = EnemyAsset(
+        flyBase:   "bix_fly_",   flyCount:   4,
+        dmgBase:   "bix_dmg_",   dmgCount:   3,
+        deathBase: "bix_die_",   deathCount: 3
+    )
 }
 
 class EntityFactory {
@@ -81,7 +100,7 @@ class EntityFactory {
         let specialTextures = loadTextures(baseName: AssetName.playerAttack, count: 4)
 
         let node = SKSpriteNode(texture: idleDown)
-        node.size      = CGSize(width: 48, height: 74)
+        node.size      = CGSize(width: 35, height: 75)
         node.position  = position
         node.zPosition = 6
         scene.addChild(node)
@@ -91,7 +110,7 @@ class EntityFactory {
         entity.add(MovementComponent(speed: 220))
         entity.add(PlayerComponent())
         entity.add(InputComponent())
-        entity.add(AttackComponent(damage: 4, range: 70, cooldown: 0.4))
+        entity.add(AttackComponent(damage: 14, range: 70, cooldown: 0.4))
         entity.add(SpriteComponent(
             downTextures: downTextures, upTextures: upTextures,
             leftTextures: leftTextures, rightTextures: rightTextures,
@@ -112,32 +131,40 @@ class EntityFactory {
         t.filteringMode = .nearest
         return t
     }
-
+    
     // MARK: Enemy
     static func makeEnemy(type: EnemyComponent.EnemyType, at position: CGPoint, scene: SKScene) -> Entity {
         let entity = Entity()
 
-        let imageName: String
+        // ── Asset config por tipo ───────────────────────────────────────────
+        // Para um novo tipo: adicione o case aqui apontando para seu EnemyAsset
+        let asset: AssetName.EnemyAsset
         let spriteSize: CGSize
         switch type {
         case .weak:
-            imageName  = AssetName.enemyWeak
-            spriteSize = CGSize(width: 68, height: 68)   // fixed size for weak enemy
+            asset      = AssetName.bix
+            spriteSize = CGSize(width: 68, height: 68)
         case .normal:
-            imageName  = AssetName.enemyNormal
-            spriteSize = CGSize(width: 88, height: 88)   // fixed size for normal enemy
+            asset      = AssetName.bix          // ← troque por AssetName.seuNovoInimigo quando tiver
+            spriteSize = CGSize(width: 88, height: 88)
         case .strong:
-            imageName  = AssetName.enemyStrong
-            spriteSize = CGSize(width: 128, height: 128)   // fixed size for strong enemy
+            asset      = AssetName.bix          // ← troque por AssetName.seuNovoInimigo quando tiver
+            spriteSize = CGSize(width: 128, height: 128)
         }
 
-        let node = SKSpriteNode(imageNamed: imageName)
+        // ── Carrega texturas ────────────────────────────────────────────────
+        let flyTextures   = loadTextures(baseName: asset.flyBase,   count: asset.flyCount)
+        let dmgTextures   = loadTextures(baseName: asset.dmgBase,   count: asset.dmgCount)
+        let deathTextures = loadTextures(baseName: asset.deathBase, count: asset.deathCount)
+
+        // ── Nó principal ────────────────────────────────────────────────────
+        let node = SKSpriteNode(texture: flyTextures.first)
         node.size      = spriteSize
         node.position  = position
         node.zPosition = 7
         scene.addChild(node)
 
-        // Health bar background
+        // ── Health bar ──────────────────────────────────────────────────────
         let barWidth: CGFloat  = spriteSize.width * 1.2
         let barHeight: CGFloat = 5
         let barBg = SKShapeNode(rectOf: CGSize(width: barWidth, height: barHeight), cornerRadius: 2)
@@ -147,13 +174,13 @@ class EntityFactory {
         barBg.zPosition   = 1
         node.addChild(barBg)
 
-        // Health bar fill
         let barFill = SKShapeNode(rectOf: CGSize(width: barWidth - 2, height: barHeight - 2), cornerRadius: 1.5)
         barFill.fillColor   = .green
         barFill.strokeColor = .clear
         barFill.zPosition   = 1
         barBg.addChild(barFill)
 
+        // ── Componentes ─────────────────────────────────────────────────────
         let health = HealthComponent(max: type.maxHealth)
         health.healthBarBackground = barBg
         health.healthBarFill       = barFill
@@ -162,6 +189,11 @@ class EntityFactory {
         entity.add(health)
         entity.add(MovementComponent(speed: type.speed))
         entity.add(EnemyComponent(type: type))
+        entity.add(EnemySpriteComponent(
+            flyTextures:   flyTextures,
+            dmgTextures:   dmgTextures,
+            deathTextures: deathTextures
+        ))
 
         return entity
     }

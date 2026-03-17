@@ -17,7 +17,8 @@ class AttackSystem {
         attackerEntity: Entity,
         enemies: [Entity],
         scene: SKScene,
-        isSpecial: Bool = false
+        isSpecial: Bool = false,
+        enemySystem: EnemySystem
     ) {
         
         guard
@@ -36,33 +37,26 @@ class AttackSystem {
         var didHitEnemy = false
         // Hit enemies in range
         for enemy in enemies {
-            guard
-                let enemyTransform = enemy.get(TransformComponent.self),
-                let health         = enemy.get(HealthComponent.self)
-            else { continue }
+                guard
+                    let enemyTransform = enemy.get(TransformComponent.self),
+                    let health         = enemy.get(HealthComponent.self)
+                else { continue }
 
-            let toEnemy = enemyTransform.node.position - origin
-            let dist    = toEnemy.length
+                let toEnemy = enemyTransform.node.position - origin
+                let dist    = toEnemy.length
 
-            guard dist <= range else { continue }
+                guard dist <= range else { continue }
 
-            // Ataque normal: só acerta inimigos na metade frontal (cone de 180°)
-            if !isSpecial {
-                let facingVector = sprite.lastDirection.vector
-                let dot = facingVector.dx * toEnemy.normalized.dx
-                        + facingVector.dy * toEnemy.normalized.dy
-                guard dot > 0 else { continue } // dot ≤ 0 → atrás do jogador, ignora
-                didHitEnemy = true
+                if !isSpecial {
+                    let facingVector = sprite.lastDirection.vector
+                    let dot = facingVector.dx * toEnemy.normalized.dx
+                            + facingVector.dy * toEnemy.normalized.dy
+                    guard dot > 0 else { continue }
+                }
+
+                health.current = Swift.max(0, health.current - damage)
+                enemySystem.triggerDmg(enemy: enemy)   // ← substitui o colorize antigo
             }
-
-            health.current = Swift.max(0, health.current - damage)
-            enemyTransform.node.run(.sequence([
-                .colorize(with: .red, colorBlendFactor: 1, duration: 0.05),
-                .colorize(withColorBlendFactor: 0, duration: 0.1)
-            ]))
-                
-                
-        }
         
         if didHitEnemy {
             SoundManager.shared.play(SoundManager.shared.hit1, on: attackerTransform.node)

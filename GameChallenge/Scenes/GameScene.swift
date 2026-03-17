@@ -42,6 +42,7 @@ class GameScene: SKScene {
     private var coinEntities:  [Entity] = []
     private var boxEntities: [Entity] = []
     private var projectileEntities: [Entity] = []
+    private var dyingEnemies: [Entity] = []
     
     // Systems
     private let movementSystem   = MovementSystem()
@@ -55,6 +56,7 @@ class GameScene: SKScene {
     private let coinSpawnSystem  = CoinSpawnSystem()
     private let boxSystem        = BoxSystem()
     private let projectileSystem = ProjectileSystem()
+    private let enemySystem = EnemySystem()
     
     // MARK: UI
     private var hud:        HUD!
@@ -293,25 +295,53 @@ class GameScene: SKScene {
         
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self) {
-            
-            // Ataque Corpo a Corpo (Botão A)
+
+            // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
-                attackSystem.update(attackerEntity: playerEntity, enemies: enemyEntities, scene: self)
+                attackSystem.update(
+                    attackerEntity: playerEntity,
+                    enemies: enemyEntities,
+                    scene: self,
+                    isSpecial: false,
+                    enemySystem: enemySystem
+                )
                 hud.flashButtonA()
             }
-            
-            // Ataque à Distância (Joystick Direito)
+
+            // Especial (Botão B) — só executa se isAttacking E isSpecialAttack estão ativos
+            if attack.isAttacking,
+               let sprite = playerEntity.get(SpriteComponent.self),
+               sprite.isSpecialAttack {
+                attackSystem.update(
+                    attackerEntity: playerEntity,
+                    enemies: enemyEntities,
+                    scene: self,
+                    isSpecial: true,
+                    enemySystem: enemySystem
+                )
+            }
+
+            // Tiro (Joystick direito) — estava faltando
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
                 if let pos = playerEntity.get(TransformComponent.self)?.node.position {
-                    let projectile = EntityFactory.makeProjectile(at: pos, direction: attack.shootDirection, scene: self)
+                    let projectile = EntityFactory.makeProjectile(
+                        at: pos,
+                        direction: attack.shootDirection,
+                        scene: self
+                    )
                     projectileEntities.append(projectile)
                 }
             }
         }
         
         // 6.5. Atualiza as balas e remove as destruídas
-        let deadProjectiles = projectileSystem.update(projectiles: projectileEntities, enemies: enemyEntities, deltaTime: dt)
+        let deadProjectiles = projectileSystem.update(
+            projectiles: projectileEntities,
+            enemies: enemyEntities,
+            deltaTime: dt,
+            enemySystem: enemySystem 
+        )
         for proj in deadProjectiles {
             proj.get(TransformComponent.self)?.node.removeFromParent()
         }
@@ -320,6 +350,9 @@ class GameScene: SKScene {
         
         // 7. Health bars
         healthSystem.update(entities: enemyEntities)
+        
+        // 7b
+        enemySystem.update(enemies: enemyEntities + dyingEnemies, currentTime: currentTime)
         
         // 8. Enemy → player collision
         collisionSystem.checkEnemyPlayerCollisions(
@@ -344,12 +377,19 @@ class GameScene: SKScene {
                 killedPts += t.specialPoints
                 maybeDropCoin(at: d.get(TransformComponent.self)?.node.position ?? .zero)
             }
-            d.get(TransformComponent.self)?.node.run(.sequence([
-                .scale(to: 0.1, duration: 0.12), .removeFromParent()
-            ]))
+            // Para o movimento do inimigo morto
+            d.get(MovementComponent.self)?.velocity = .zero
+            // Trigga animação — nó será removido pelo EnemySystem ao terminar
+            enemySystem.triggerDeath(enemy: d)
+            dyingEnemies.append(d)   // ← move para lista de moribundos
         }
         let deadIDs = Set(dead.map { $0.id })
         enemyEntities.removeAll { deadIDs.contains($0.id) }
+
+        // Remove da lista de moribundos os que já tiveram o nó removido da cena
+        dyingEnemies.removeAll {
+            $0.get(TransformComponent.self)?.node.parent == nil
+        }
         
         // 11. Special charge
         if let pl = playerEntity.get(PlayerComponent.self) {

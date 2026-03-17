@@ -13,6 +13,8 @@ class MenuScene: SKScene {
     var titleLabel: SKLabelNode!
     
     var playButton: SKSpriteNode!
+    var leaderboardButton: SKSpriteNode!
+    var settingsButton: SKSpriteNode!
     
     override init(size: CGSize) {
         super.init(size: size)
@@ -31,7 +33,6 @@ class MenuScene: SKScene {
     }
     
     func makeBackground(size: CGSize) {
-        
         let backgroundTexture = SKTexture(imageNamed: "menuBackground")
         backgroundTexture.filteringMode = .nearest
         background = SKSpriteNode(texture: backgroundTexture)
@@ -43,10 +44,10 @@ class MenuScene: SKScene {
     }
     
     func makeButtons(size: CGSize) {
-        let buttonsWSize = size.width * 0.25
-        let buttonsHSize = buttonsWSize * 0.5
+        let buttonsWSize = 160
+        let buttonsHSize = 55
         
-        let playButtonTexture = SKTexture(imageNamed: "playButton")
+        let playButtonTexture = SKTexture(imageNamed: "buttonBackground")
         playButtonTexture.filteringMode = .nearest
         playButton = SKSpriteNode(texture: playButtonTexture)
         playButton.size = CGSize(width: buttonsWSize, height: buttonsHSize)
@@ -54,6 +55,24 @@ class MenuScene: SKScene {
         playButton.zPosition = 1
         playButton.name = "playButton"
         addChild(playButton)
+        
+        let leaderboardButtonTexture = SKTexture(imageNamed: "buttonBackground")
+        leaderboardButtonTexture.filteringMode = .nearest
+        leaderboardButton = SKSpriteNode(texture: playButtonTexture)
+        leaderboardButton.size = CGSize(width: buttonsWSize, height: buttonsHSize)
+        leaderboardButton.position = CGPoint(x: size.width * 0.3, y: size.height * 0.15)
+        leaderboardButton.zPosition = 1
+        leaderboardButton.name = "leaderboardButton"
+        addChild(leaderboardButton)
+        
+        let settingsButtonTexture = SKTexture(imageNamed: "buttonBackground")
+        settingsButtonTexture.filteringMode = .nearest
+        settingsButton = SKSpriteNode(texture: playButtonTexture)
+        settingsButton.size = CGSize(width: 50, height: 50)
+        settingsButton.position = CGPoint(x: size.width * 0.3, y: size.height * 0.15)
+        settingsButton.zPosition = 1
+        settingsButton.name = "settingsButton"
+        addChild(settingsButton)
     }
     
     
