@@ -70,7 +70,7 @@ class GameScene: SKScene {
     
     // Pause state
     private var isPausedByPlayer = false
-    private var pauseNode: Pause!
+    // private var pauseNode: Pause!
     
     private var lastCooldownUpdate: TimeInterval = 0
     
@@ -78,9 +78,9 @@ class GameScene: SKScene {
     private let worldSize = CGSize(width: 1800, height: 1800)
     
     override init(size: CGSize) {
-        pauseNode = Pause(size: size)
+//        pauseNode = Pause(size: size)
         super.init(size: size)
-        addChild(pauseNode)
+//        addChild(pauseNode)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -148,7 +148,7 @@ class GameScene: SKScene {
         if minY > maxY { camPos.y = 0 } else { camPos.y = camPos.y.clamped(to: minY...maxY) }
 
         cameraNode.position  = camPos
-        pauseNode.position   = camPos
+//        pauseNode.position   = camPos
     }
     
     /// Creates and adds the camera node, setting its zPosition and linking it to the scene.
@@ -485,8 +485,8 @@ class GameScene: SKScene {
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
         isPausedByPlayer.toggle()
-        //        hud.showPauseOverlay(isPausedByPlayer)
-        pauseNode.pauseGame()
+        hud.showPauseOverlay(isPausedByPlayer)
+//        pauseNode.pauseGame()
     }
     
     /// Calculates time delta for frame updates, capped at 1/30th second.

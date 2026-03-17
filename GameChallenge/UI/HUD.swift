@@ -234,26 +234,33 @@ class HUD: SKNode {
     private func buildPauseOverlay() -> SKNode {
         let root = SKNode(); root.zPosition = 200
 
-        let bg = SKShapeNode(rectOf: screenSize)
-        bg.fillColor = UIColor.black.withAlphaComponent(0.65)
-        bg.strokeColor = .clear
+        let backgroundTexture = SKTexture(imageNamed: "pauseBackground")
+        let bg = SKSpriteNode(texture: backgroundTexture)
+        bg.zPosition = 0
         root.addChild(bg)
 
-        let title = SKLabelNode(text: "PAUSED")
-        title.fontName = "AvenirNext-Heavy"; title.fontSize = 36
-        title.fontColor = .white; title.position = CGPoint(x: 0, y: 50)
+        let title = SKLabelNode(text: "Pause")
+        title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
+        title.fontColor = .white;
+        title.position = CGPoint(x: -316.25, y: 83.5)
+        title.zPosition = 1
         root.addChild(title)
+        
+        let title2 = SKLabelNode(text: waveLabel.text)
+        title2.fontName = "PressStart2P-Regular"; title2.fontSize = 67
+        title2.fontColor = .white;
+        title2.position = CGPoint(x: -140.25, y: 0)
+        title2.zPosition = 1
+        root.addChild(title2)
 
         root.addChild(makeOverlayButton(
-            text: "▶  RESUME",
-            color: UIColor(red: 0.1, green: 0.55, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: -10),
+            text: "Resume",
+            pos: CGPoint(x: -292.25, y: -43.75),
             name: "resumeButton"
         ))
         root.addChild(makeOverlayButton(
-            text: "⬅  MENU",
-            color: UIColor(red: 0.4, green: 0.1, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: -70),
+            text: "Exit",
+            pos: CGPoint(x: -108.25, y: -43.75),
             name: "menuFromPause"
         ))
         return root
@@ -295,55 +302,34 @@ class HUD: SKNode {
         let root = SKNode(); root.zPosition = 200
         gameOverOverlay = root
 
-        let bg = SKShapeNode(rectOf: screenSize)
-        bg.fillColor = UIColor.black.withAlphaComponent(0.75)
-        bg.strokeColor = .clear; root.addChild(bg)
+        let backgroundTexture = SKTexture(imageNamed: "gameOverBackground")
+        let bg = SKSpriteNode(texture: backgroundTexture)
+        bg.zPosition = 0
+        root.addChild(bg)
+        
 
-        let title = SKLabelNode(text: "GAME OVER")
-        title.fontName = "AvenirNext-Heavy"; title.fontSize = 40
-        title.fontColor = .red; title.position = CGPoint(x: 0, y: 55)
+        let title = SKLabelNode(text: "Game Over")
+        title.fontName = "PressStart2P-Regular"; title.fontSize = 67
+        title.fontColor = .white;
+        title.position = CGPoint(x: 0, y: 33.5)
+        title.zPosition = 1
         root.addChild(title)
 
         let canShow = AdManager.shared.canShowAd()
 
-        let button = SKShapeNode(rectOf: CGSize(width: 210, height: 48), cornerRadius: 12)
-
-        button.fillColor = canShow
-            ? UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
-            : UIColor.darkGray
-
-        button.strokeColor = UIColor(white: 1, alpha: 0.5)
-        button.lineWidth = 1.5
-        button.position = CGPoint(x: 0, y: 0)
-        button.zPosition = 1
-        button.name = canShow ? "continueButton" : "continueDisabled"
-
-        let lbl = SKLabelNode(text: continueButtonText())
-        lbl.fontName = "AvenirNext-Heavy"
-        lbl.fontSize = 18
-        lbl.fontColor = .white
-        lbl.verticalAlignmentMode = .center
-        lbl.horizontalAlignmentMode = .center
-        lbl.name = button.name
-
-        button.addChild(lbl)
-
-        // guardar referências para atualizar depois
-        continueLabel = lbl
-        continueButtonNode = button
-
-        root.addChild(button)
+        root.addChild(makeOverlayButton(
+            text: "Continue",
+            pos: CGPoint(x: -183, y: -50),
+            name: canShow ? "continueButton" : "continueDisabled"))
         
         root.addChild(makeOverlayButton(
-            text: "↺  PLAY AGAIN",
-            color: UIColor(red: 0.1, green: 0.5, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: -60),
+            text: "Restart",
+            pos: CGPoint(x: 0, y: -50),
             name: "restartButton"
         ))
         root.addChild(makeOverlayButton(
-            text: "⬅  MENU",
-            color: UIColor(red: 0.3, green: 0.1, blue: 0.1, alpha: 0.95),
-            pos: CGPoint(x: 0, y: -120),
+            text: "Menu",
+            pos: CGPoint(x: 183, y: -50),
             name: "menuFromGameOver"
         ))
         addChild(root)
@@ -354,15 +340,20 @@ class HUD: SKNode {
         gameOverOverlay = nil
     }
 
-    private func makeOverlayButton(text: String, color: UIColor, pos: CGPoint, name: String) -> SKNode {
-        let bg = SKShapeNode(rectOf: CGSize(width: 210, height: 48), cornerRadius: 12)
-        bg.fillColor = color; bg.strokeColor = UIColor(white: 1, alpha: 0.5)
-        bg.lineWidth = 1.5; bg.position = pos; bg.zPosition = 1; bg.name = name
+    private func makeOverlayButton(text: String,  pos: CGPoint, name: String) -> SKNode {
+        let backgroundTexture = SKTexture(imageNamed: "buttonBackground")
+        let bg = SKSpriteNode(texture: backgroundTexture)
+        bg.zPosition = 1
+        bg.position = pos
+        bg.name = name
+        
         let lbl = SKLabelNode(text: text)
-        lbl.fontName = "AvenirNext-Heavy"; lbl.fontSize = 18; lbl.fontColor = .white
-        lbl.verticalAlignmentMode = .center; lbl.horizontalAlignmentMode = .center
         lbl.name = name
+        lbl.fontName = "PressStart2P-Regular"; lbl.fontSize = 11.75; lbl.fontColor = .white
+        lbl.verticalAlignmentMode = .center; lbl.horizontalAlignmentMode = .center
+        lbl.zPosition = 2
         bg.addChild(lbl)
         return bg
+        
     }
 }
