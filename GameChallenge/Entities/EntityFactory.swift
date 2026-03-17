@@ -235,26 +235,7 @@ class EntityFactory {
 
         return entity
     }
-    
-    // Projétil do inimigo — cor diferente para distinguir do player
-    static func makeEnemyProjectile(at position: CGPoint, direction: CGVector, scene: SKScene) -> Entity {
-        let entity = Entity()
-
-        let node = SKShapeNode(circleOfRadius: 7)
-        node.fillColor   = UIColor(red: 1.0, green: 0.3, blue: 0.1, alpha: 1)  // laranja
-        node.strokeColor = .yellow
-        node.lineWidth   = 1.5
-        node.position    = position
-        node.zPosition   = 9
-        scene.addChild(node)
-
-        entity.add(TransformComponent(node: node))
-        // Dano fixo de 12, velocidade menor que a do player
-        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 380))
-
-        return entity
-    }
-    
+        
     // MARK: - Helper Methods
     
     /// Loads a sequence of textures with a base name and count
@@ -327,41 +308,76 @@ class EntityFactory {
     }
     
     // MARK: Box
-    /// Spawns an indestructible box at `position`.
-    /// Boxes use AABB collision resolved by BoxSystem — no SpriteKit physics needed.
+    /// Spawns um obstáculo indestructível aleatório na posição dada.
+    /// Para adicionar novos tipos: basta adicionar um case em BoxComponent.ObstacleType.
     static func makeBox(at position: CGPoint, scene: SKScene) -> Entity {
         let entity = Entity()
-        
-        let node = SKSpriteNode(imageNamed: AssetName.box)
+
+        // Sorteia aleatoriamente um dos tipos disponíveis
+        let obstacleType = BoxComponent.ObstacleType.allCases.randomElement()!
+
+        let node = SKSpriteNode(imageNamed: obstacleType.assetName)
         node.size      = CGSize(width: 50, height: 50)
         node.position  = position
         node.zPosition = 8
         scene.addChild(node)
-        
+
         entity.add(TransformComponent(node: node))
-        entity.add(BoxComponent())
-        
+        entity.add(BoxComponent(type: obstacleType))
+
         return entity
     }
     
-    // MARK: Projectile
+    // MARK: Projectile (player) — knife animation
     static func makeProjectile(at position: CGPoint, direction: CGVector, scene: SKScene) -> Entity {
         let entity = Entity()
-        
-        // Visual do tiro (pode substituir por um SKSpriteNode com textura depois)
-        let node = SKShapeNode(circleOfRadius: 8)
-        node.fillColor = .cyan
-        node.strokeColor = .white
-        node.lineWidth = 1.5
-        node.position = position
+
+        let textures = loadTextures(baseName: "Shuriken_2_", count: 30)
+
+        let node = SKSpriteNode(texture: textures.first)
+        node.size      = CGSize(width: 32, height: 32)  // ← ajuste ao tamanho do sprite
+        node.position  = position
         node.zPosition = 9
+
+        // Rotaciona o sprite na direção do tiro
+        node.zRotation = atan2(direction.dy, direction.dx) - (.pi / 2)
+
         scene.addChild(node)
-        
+
+        // Animação em loop enquanto voa
+        let animate = SKAction.animate(with: textures, timePerFrame: 0.04)  // ← ajuste a velocidade
+        node.run(.repeatForever(animate))
+
         entity.add(TransformComponent(node: node))
         entity.add(ProjectileComponent(damage: 15, direction: direction, speed: 600))
-        
+
         SoundManager.shared.play(SoundManager.shared.attack2, on: node)
-        
+
         return entity
     }
-}
+
+    // MARK: EnemyProjectile — fireball animation
+    static func makeEnemyProjectile(at position: CGPoint, direction: CGVector, scene: SKScene) -> Entity {
+        let entity = Entity()
+
+        let textures = loadTextures(baseName: "fireball_", count: 5)
+
+        let node = SKSpriteNode(texture: textures.first)
+        node.size      = CGSize(width: 40, height: 40)  // ← ajuste ao tamanho do sprite
+        node.position  = position
+        node.zPosition = 9
+
+        // Rotaciona o sprite na direção do tiro
+        node.zRotation = atan2(direction.dy, direction.dx) - (.pi / 2)
+
+        scene.addChild(node)
+
+        // Animação em loop enquanto voa
+        let animate = SKAction.animate(with: textures, timePerFrame: 0.1)  // ← ajuste a velocidade
+        node.run(.repeatForever(animate))
+
+        entity.add(TransformComponent(node: node))
+        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 380))
+
+        return entity
+    }}

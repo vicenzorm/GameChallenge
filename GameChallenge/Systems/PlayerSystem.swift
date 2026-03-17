@@ -56,8 +56,8 @@ class PlayerSystem {
             }
         }
 
-        // Clamp to world bounds
-        let worldHalf: CGFloat = 1180
+        // Clamp to world bounds — deve ser metade do worldSize menos margem do sprite
+        let worldHalf: CGFloat = 880   // 1800/2 - margem de ~20px
         node.position.x = Swift.max(-worldHalf, Swift.min(worldHalf, node.position.x))
         node.position.y = Swift.max(-worldHalf, Swift.min(worldHalf, node.position.y))
         
