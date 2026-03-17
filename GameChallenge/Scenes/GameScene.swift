@@ -43,6 +43,7 @@ class GameScene: SKScene {
     private var boxEntities: [Entity] = []
     private var projectileEntities: [Entity] = []
     private var dyingEnemies: [Entity] = []
+    private var itemEntities: [Entity] = []
     private var enemyProjectileEntities: [Entity] = []
     
     // Systems
@@ -58,6 +59,7 @@ class GameScene: SKScene {
     private let boxSystem        = BoxSystem()
     private let projectileSystem = ProjectileSystem()
     private let enemySystem = EnemySystem()
+    private let itemSpawnSystem = ItemSpawnSystem()
     
     // MARK: UI
     private var hud:        HUD!
@@ -157,6 +159,10 @@ class GameScene: SKScene {
         cameraNode.zPosition = 50
         addChild(cameraNode)
         camera = cameraNode
+    }
+    
+    func addItemEntity(_ entity: Entity) {
+        itemEntities.append(entity)
     }
     
     /// Initializes the joystick, adds it to the camera, and makes it visible and interactive.
@@ -438,6 +444,7 @@ class GameScene: SKScene {
             if let t = d.get(EnemyComponent.self)?.type {
                 killedPts += t.specialPoints
                 maybeDropCoin(at: d.get(TransformComponent.self)?.node.position ?? .zero)
+                maybeDropItem(at: d.get(TransformComponent.self)?.node.position ?? .zero)
             }
             // Para o movimento do inimigo morto
             d.get(MovementComponent.self)?.velocity = .zero
@@ -463,6 +470,8 @@ class GameScene: SKScene {
             hud.setButtonBActive(pl.specialReady)
         }
         
+        
+        
         // 12. HUD health + game over
         if let h = playerEntity.get(HealthComponent.self) {
             hud.updateHealth(current: h.current, maxHP: h.max)
@@ -479,6 +488,25 @@ class GameScene: SKScene {
         }
         coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
         
+        // 15. Item spawn
+        itemSpawnSystem.update(
+            deltaTime: dt,
+            currentTime: currentTime,
+            activeItems: itemEntities.count,
+            sceneSize: worldSize,
+            scene: self
+        )
+
+        // 16. Item collection (Coleta)
+        // Reutilizamos a lógica de distância das moedas para os itens
+        let pickedItems = collisionSystem.checkCoinCollection(playerEntity: playerEntity, coins: itemEntities)
+        for item in pickedItems {
+            collisionSystem.handleItemPickup(player: playerEntity, item: item, scene: self)
+        }
+
+        // Limpeza da lista
+        let pickedIDs = Set(pickedItems.map { $0.id })
+        itemEntities.removeAll { pickedIDs.contains($0.id) }
         
     }
     
@@ -500,6 +528,23 @@ class GameScene: SKScene {
     private func maybeDropCoin(at pos: CGPoint) {
         guard Int.random(in: 0..<3) == 0 else { return }
         coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
+    }
+    
+    /// Randomly drops a consumable at the specified position.
+    /// Tweak `dropChance` to make consumables more/less frequent on enemy kill.
+    private func maybeDropItem(at pos: CGPoint) {
+        let dropChance: CGFloat = 0.10
+        guard CGFloat.random(in: 0...1) < dropChance else { return }
+        
+        // Weighted random by desirability/rarity.
+        let roll = CGFloat.random(in: 0...1)
+        let type: ItemComponent.ItemType
+        if roll < 0.05 { type = .killAll }
+        else if roll < 0.15 { type = .specialCharge }
+        else { type = .healthPotion }
+        
+        let item = EntityFactory.makeConsumable(type: type, at: pos, scene: self)
+        addItemEntity(item)
     }
     
     /// Displays a wave banner at the center of the screen.
@@ -531,7 +576,8 @@ class GameScene: SKScene {
         hud.showGameOver()
     }
     
-    private func clearEnemiesAroundPlayer() {
+    // Made internal so systems (e.g., CollisionSystem) can trigger it.
+    func clearEnemiesAroundPlayer() {
         
         for enemy in enemyEntities {
             enemy.get(TransformComponent.self)?.node.run(.sequence([

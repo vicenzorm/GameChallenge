@@ -76,4 +76,28 @@ class CollisionSystem {
             return pPos.distance(to: t.node.position) < 32
         }
     }
+    
+    func handleItemPickup(player: Entity, item: Entity, scene: GameScene){
+        guard let itemType = item.get(ItemComponent.self)?.type else { return }
+        
+        switch itemType{
+        case .healthPotion:
+            if let hp = player.get(HealthComponent.self) {
+                hp.current = min(hp.max, hp.current + 50)
+            }
+            
+        case .specialCharge:
+            if let pl = player.get(PlayerComponent.self) {
+                // Example effect: grant enough points to make special ready
+                pl.killStreak = max(pl.killStreak, PlayerComponent.weakKillsNeeded)
+                pl.specialReady = true
+            }
+            
+        case .killAll:
+            scene.clearEnemiesAroundPlayer()
+        }
+        
+        item.get(TransformComponent.self)?.node.removeFromParent()
+    }
 }
+
