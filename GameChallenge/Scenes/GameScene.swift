@@ -513,8 +513,15 @@ class GameScene: SKScene {
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
         isPausedByPlayer.toggle()
+        
+        // Esconde ou mostra os joysticks baseado no estado de pausa
+        movementJoystick.isHidden = isPausedByPlayer
+        movementJoystick.isUserInteractionEnabled = !isPausedByPlayer
+        
+        attackJoystick.isHidden = isPausedByPlayer
+        attackJoystick.isUserInteractionEnabled = !isPausedByPlayer
+        
         hud.showPauseOverlay(isPausedByPlayer)
-//        pauseNode.pauseGame()
     }
     
     /// Calculates time delta for frame updates, capped at 1/30th second.
