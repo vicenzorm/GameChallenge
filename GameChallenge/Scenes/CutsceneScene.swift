@@ -94,7 +94,7 @@ class CutscenePlayer: NSObject {
     private func addSkipButton(to view: UIView) {
         let btn = UIButton(type: .system)
         btn.setTitle("SKIP ▶▶", for: .normal)
-        btn.titleLabel?.font    = UIFont(name: "AvenirNext-Bold", size: 14)
+        btn.titleLabel?.font    = UIFont(name: AppManager.shared.secondaryFont, size: 14)
         btn.setTitleColor(UIColor(white: 0.85, alpha: 1), for: .normal)
         btn.backgroundColor     = UIColor.black.withAlphaComponent(0.55)
         btn.layer.cornerRadius  = 8
