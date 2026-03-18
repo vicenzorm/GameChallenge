@@ -54,7 +54,7 @@ class HUD: SKNode {
         barBg.addChild(healthBarFill)
 
         let hpLbl = SKLabelNode(text: "HP")
-        hpLbl.fontName = "AvenirNext-Bold"; hpLbl.fontSize = 9
+        hpLbl.fontName = AppManager.shared.secondaryFont; hpLbl.fontSize = 9
         hpLbl.fontColor = .white; hpLbl.position = CGPoint(x: -90, y: -5)
         barBg.addChild(hpLbl)
 
@@ -66,21 +66,22 @@ class HUD: SKNode {
         coinIcon.zPosition = 100
 
         coinLabel = SKLabelNode(text: "0")
-        coinLabel.fontName = "AvenirNext-Bold"; coinLabel.fontSize = 14
+        coinLabel.fontName = AppManager.shared.secondaryFont; coinLabel.fontSize = 14
         coinLabel.fontColor = .yellow
         coinLabel.horizontalAlignmentMode = .left
         coinLabel.position = CGPoint(x: -hw + 30, y: hh - 55); coinLabel.zPosition = 100
 
         // ── Wave label (top-centre) ────────────────────────────
         waveLabel = SKLabelNode(text: "Floor 1")
-        waveLabel.fontName = "AvenirNext-Heavy"; waveLabel.fontSize = 16
+        waveLabel.fontName = AppManager.shared.secondaryFont
+        waveLabel.fontSize = 16
         waveLabel.fontColor = .white
         waveLabel.horizontalAlignmentMode = .center
         waveLabel.position = CGPoint(x: 0, y: hh - 24); waveLabel.zPosition = 100
 
         // Countdown (shown between waves, same position)
         countdownLabel = SKLabelNode(text: "")
-        countdownLabel.fontName = "AvenirNext-Heavy"; countdownLabel.fontSize = 13
+        countdownLabel.fontName = AppManager.shared.secondaryFont; countdownLabel.fontSize = 13
         countdownLabel.fontColor = UIColor(white: 0.7, alpha: 1)
         countdownLabel.horizontalAlignmentMode = .center
         countdownLabel.position = CGPoint(x: 0, y: hh - 42); countdownLabel.zPosition = 100
@@ -93,7 +94,7 @@ class HUD: SKNode {
         specialBg.position = CGPoint(x: hw - specW/2 - 12, y: hh - 26); specialBg.zPosition = 100
 
         specialLabel = SKLabelNode(text: "SPEC")
-        specialLabel.fontName = "AvenirNext-Bold"; specialLabel.fontSize = 10
+        specialLabel.fontName = AppManager.shared.secondaryFont; specialLabel.fontSize = 10
         specialLabel.fontColor = .cyan
         specialLabel.verticalAlignmentMode = .center
         specialLabel.horizontalAlignmentMode = .center
@@ -125,7 +126,7 @@ class HUD: SKNode {
         buttonA.position = CGPoint(x: hw - 146, y: -hh + 152); buttonA.zPosition = 100
         buttonA.name = "buttonA"
         let aLbl = SKLabelNode(text: "A")
-        aLbl.fontName = "AvenirNext-Heavy"; aLbl.fontSize = 22; aLbl.fontColor = .white
+        aLbl.fontName = AppManager.shared.secondaryFont; aLbl.fontSize = 22; aLbl.fontColor = .white
         aLbl.verticalAlignmentMode = .center; aLbl.horizontalAlignmentMode = .center
         aLbl.zPosition = 1; aLbl.name = "buttonA"
         buttonA.addChild(aLbl)
@@ -137,7 +138,7 @@ class HUD: SKNode {
         buttonB.position = CGPoint(x: hw - 200, y: -hh + 42); buttonB.zPosition = 100
         buttonB.name = "buttonB"
         let bLbl = SKLabelNode(text: "B")
-        bLbl.fontName = "AvenirNext-Heavy"; bLbl.fontSize = 17; bLbl.fontColor = .white
+        bLbl.fontName = AppManager.shared.secondaryFont; bLbl.fontSize = 17; bLbl.fontColor = .white
         bLbl.verticalAlignmentMode = .center; bLbl.horizontalAlignmentMode = .center
         bLbl.zPosition = 1; bLbl.name = "buttonB"
         buttonB.addChild(bLbl)
