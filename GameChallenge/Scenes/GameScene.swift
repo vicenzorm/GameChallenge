@@ -338,14 +338,15 @@ class GameScene: SKScene {
 
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
+                let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
                     attackerEntity: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
-                    isSpecial: false,
+                    isSpecial: isSpecialNow,
                     enemySystem: enemySystem
                 )
-                hud.flashButtonA()
+                if !isSpecialNow { hud.flashButtonA() }
             }
           
             if inputSystem.specialPressed && pl.specialReady {
@@ -364,18 +365,8 @@ class GameScene: SKScene {
                     hud.updateSpecial(killStreak: 0, isReady: false)
                 }
 
-            // Especial (Botão B) — só executa se isAttacking E isSpecialAttack estão ativos
-            if attack.isAttacking,
-               let sprite = playerEntity.get(SpriteComponent.self),
-               sprite.isSpecialAttack {
-                attackSystem.update(
-                    attackerEntity: playerEntity,
-                    enemies: enemyEntities,
-                    scene: self,
-                    isSpecial: true,
-                    enemySystem: enemySystem
-                )
-            }
+            // OBS: o dano do especial é aplicado pelo mesmo update acima,
+            // usando `sprite.isSpecialAttack` para escolher o multiplicador.
             
             // Tiro (Joystick direito) — estava faltando
             if attack.wantsToShoot {

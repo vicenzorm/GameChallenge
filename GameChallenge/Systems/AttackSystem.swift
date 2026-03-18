@@ -26,7 +26,7 @@ class AttackSystem {
 
         let origin = attackerTransform.node.position
         let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
-        let damage = isSpecial ? attackComp.damage * 3  : attackComp.damage
+        let damage = isSpecial ? attackComp.damage * 20  : attackComp.damage
 
         var didHitAny = false
 
