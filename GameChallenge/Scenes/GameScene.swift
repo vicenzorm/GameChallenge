@@ -339,51 +339,38 @@ class GameScene: SKScene {
         }
         
         // 6. Attack & Shooting
-        
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
-            
+
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
+                let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
                     attackerEntity: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
-                    isSpecial: false,
+                    isSpecial: isSpecialNow,
                     enemySystem: enemySystem
                 )
-                hud.flashButtonA()
+                if !isSpecialNow { hud.flashButtonA() }
             }
-            
+
             if inputSystem.specialPressed && pl.specialReady {
                 inputSystem.specialPressed = false
-                
+
                 attackSystem.startSpecialAttack(
                     player: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
                     enemySystem: enemySystem
                 )
-                
+
                 // Zera a barra no componente e no HUD
                 pl.killStreak = 0
                 pl.specialReady = false
                 hud.updateSpecial(killStreak: 0, isReady: false)
             }
-            
-            // Especial (Botão B) — só executa se isAttacking E isSpecialAttack estão ativos
-            if attack.isAttacking,
-               let sprite = playerEntity.get(SpriteComponent.self),
-               sprite.isSpecialAttack {
-                attackSystem.update(
-                    attackerEntity: playerEntity,
-                    enemies: enemyEntities,
-                    scene: self,
-                    isSpecial: true,
-                    enemySystem: enemySystem
-                )
-            }
-            
-            // Tiro (Joystick direito) — estava faltando
+
+            // Tiro (Joystick direito)
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
                 if let pos = playerEntity.get(TransformComponent.self)?.node.position {
