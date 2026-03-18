@@ -181,7 +181,7 @@ class HUD: SKNode {
 
     func showCountdown(_ seconds: Int) {
         if seconds > 0 {
-            countdownLabel.text = "Next wave in \(seconds)…"
+            countdownLabel.text = "Next floor in \(seconds)…"
         } else {
             countdownLabel.text = ""
         }

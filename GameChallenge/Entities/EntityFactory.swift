@@ -146,7 +146,7 @@ class EntityFactory {
         entity.add(MovementComponent(speed: 220))
         entity.add(PlayerComponent())
         entity.add(InputComponent())
-        entity.add(AttackComponent(damage: 14, range: 70, cooldown: 0.4))
+        entity.add(AttackComponent(damage: 400, range: 70, cooldown: 0.4))
         entity.add(SpriteComponent(
             downTextures: downTextures, upTextures: upTextures,
             leftTextures: leftTextures, rightTextures: rightTextures,
@@ -362,8 +362,50 @@ class EntityFactory {
         
         return entity
     }
-    // MARK: Consumables
     
+    // MARK: Ladder
+    static func makeLadder(at position: CGPoint, scene: SKScene) -> Entity {
+        let entity = Entity()
+
+        let node = SKSpriteNode(imageNamed: "ladder_sprite")
+        node.size      = CGSize(width: 64, height: 64)   // ← ajuste ao tamanho do asset
+        node.position  = position
+        node.zPosition = 6
+        node.alpha     = 0
+
+        scene.addChild(node)
+
+        node.run(.fadeIn(withDuration: 0.5))
+
+        node.run(.repeatForever(.sequence([
+            .moveBy(x: 0, y: 6, duration: 0.6),
+            .moveBy(x: 0, y: -6, duration: 0.6)
+        ])))
+
+        entity.add(TransformComponent(node: node))
+        entity.add(LadderComponent())
+
+        return entity
+    }
+
+    // MARK: Arrow (indicador de direção)
+    static func makeArrow(attachedTo cameraNode: SKCameraNode) -> SKSpriteNode {
+        let node = SKSpriteNode(imageNamed: "arrow_sprite")
+        node.size      = CGSize(width: 32, height: 32)
+        node.zPosition = 20
+        node.alpha     = 0
+        node.run(.fadeIn(withDuration: 0.3))
+        node.run(.repeatForever(.sequence([
+            .scale(to: 1.2, duration: 0.4),
+            .scale(to: 1.0, duration: 0.4)
+        ])))
+
+        // Filha do cameraNode — sempre visível na tela
+        cameraNode.addChild(node)
+        return node
+    }
+    
+    // MARK: Consumables
     static func makeConsumable(type: ItemComponent.ItemType, at position: CGPoint, scene: SKScene) -> Entity{
         
         let entity = Entity()
