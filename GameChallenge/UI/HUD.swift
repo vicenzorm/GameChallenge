@@ -12,17 +12,20 @@ import SpriteKit
 
 class HUD: SKNode {
 
-    private let healthBarFill:  SKShapeNode
-    private let coinLabel:      SKLabelNode
     private let waveLabel:      SKLabelNode
-    private let specialBg:      SKShapeNode
-    private let specialLabel:   SKLabelNode
-    private let specialFill:    SKShapeNode
     private let buttonA:        SKShapeNode
     private let buttonB:        SKShapeNode
-    private let pauseButton:    SKShapeNode
+    private let pauseButton:    SKSpriteNode
     private let countdownLabel: SKLabelNode
-
+    
+    
+    private let healthSprite = SKSpriteNode(imageNamed: "healthBarFull")
+    private let healthCrop: SKCropNode
+    private let healthMask: SKSpriteNode
+    
+    private let specialCrop: SKCropNode
+    private let specialMask: SKSpriteNode
+    
     // Overlay nodes (created on demand)
     private var pauseOverlay:   SKNode?
     private var gameOverOverlay: SKNode?
@@ -38,38 +41,58 @@ class HUD: SKNode {
         let hw = screenSize.width  / 2
         let hh = screenSize.height / 2
 
+        //Character Image
+        
+        let charImg = SKSpriteNode(imageNamed: "characterImage")
+        charImg.zPosition = 100
+        charImg.position = CGPoint(x: -hw + 60, y: hh - 50)
+        charImg.size = CGSize(width: 65, height: 65)
+        
+        
+        
         // ── Health bar (top-left) ──────────────────────────────
-        let barH: CGFloat = 14
-        let barBg = SKShapeNode(rectOf: CGSize(width: 160, height: barH), cornerRadius: 3)
-        barBg.fillColor   = UIColor(white: 0.2, alpha: 0.85)
-        barBg.strokeColor = UIColor(white: 1, alpha: 0.35)
-        barBg.lineWidth   = 1
-        barBg.position    = CGPoint(x: -hw + 90, y: hh - 26)
-        barBg.zPosition   = 100
+        let barBg = SKSpriteNode(imageNamed: "healthBarBackground")
+        barBg.size = CGSize(width: 156, height: 22.7)
+        barBg.position    = CGPoint(x: -hw + 160, y: hh - 35)
+        barBg.zPosition   = 99
 
-        healthBarFill = SKShapeNode(rectOf: CGSize(width: 156, height: barH - 4), cornerRadius: 2)
-        healthBarFill.fillColor   = .green
-        healthBarFill.strokeColor = .clear
-        healthBarFill.zPosition   = 1
-        barBg.addChild(healthBarFill)
-
-        let hpLbl = SKLabelNode(text: "HP")
-        hpLbl.fontName = "AvenirNext-Bold"; hpLbl.fontSize = 9
-        hpLbl.fontColor = .white; hpLbl.position = CGPoint(x: -90, y: -5)
-        barBg.addChild(hpLbl)
-
-        // ── Coin icon + label (below health bar) ───────────────
-        let coinIcon = SKShapeNode(circleOfRadius: 7)
-        coinIcon.fillColor = .yellow
-        coinIcon.strokeColor = UIColor(red: 0.8, green: 0.6, blue: 0, alpha: 1)
-        coinIcon.lineWidth = 1; coinIcon.position = CGPoint(x: -hw + 18, y: hh - 48)
-        coinIcon.zPosition = 100
-
-        coinLabel = SKLabelNode(text: "0")
-        coinLabel.fontName = "AvenirNext-Bold"; coinLabel.fontSize = 14
-        coinLabel.fontColor = .yellow
-        coinLabel.horizontalAlignmentMode = .left
-        coinLabel.position = CGPoint(x: -hw + 30, y: hh - 55); coinLabel.zPosition = 100
+        
+        healthSprite.size = CGSize(width: 156, height: 22.7)
+        
+        let hMask = SKSpriteNode(color: .white, size: healthSprite.size)
+        hMask.anchorPoint = CGPoint(x: 0, y: 0.5)
+        hMask.position.x  = -healthSprite.size.width / 2
+        let hCrop = SKCropNode()
+        hCrop.addChild(healthSprite)
+        hCrop.maskNode = hMask
+        hCrop.position = CGPoint(x: -hw + 160, y: hh - 35)
+        hCrop.zPosition = 100
+        
+        healthCrop = hCrop
+        healthMask = hMask
+        
+        
+        // Special Bar
+        let specialBarBg = SKSpriteNode(imageNamed: "specialBarBackground")
+        specialBarBg.size = CGSize(width: 121.3, height: 13.5)
+        specialBarBg.position    = CGPoint(x: -hw + 150, y: hh - 58)
+        specialBarBg.zPosition   = 99
+        
+        let specialSprite = SKSpriteNode(imageNamed: "specialBarFull")
+        specialSprite.size = CGSize(width: 121.3, height: 13.5)
+        
+        let sMask = SKSpriteNode(color: .white, size: specialSprite.size)
+        sMask.anchorPoint = CGPoint(x: 0, y: 0.5)
+        sMask.position.x = -specialSprite.size.width / 2
+        let sCrop = SKCropNode()
+        sCrop.addChild(specialSprite)
+        sCrop.maskNode = sMask
+        sCrop.position = CGPoint(x: -hw + 148, y: hh - 58)
+        sCrop.zPosition = 100
+        
+        specialCrop = sCrop
+        specialMask = sMask
+        
 
         // ── Wave label (top-centre) ────────────────────────────
         waveLabel = SKLabelNode(text: "Floor 1")
@@ -85,38 +108,13 @@ class HUD: SKNode {
         countdownLabel.horizontalAlignmentMode = .center
         countdownLabel.position = CGPoint(x: 0, y: hh - 42); countdownLabel.zPosition = 100
 
-        // ── Special bar (top-right) ────────────────────────────
-        let specW: CGFloat = 88
-        specialBg = SKShapeNode(rectOf: CGSize(width: specW, height: 22), cornerRadius: 5)
-        specialBg.fillColor = UIColor(white: 0.15, alpha: 0.85)
-        specialBg.strokeColor = .cyan; specialBg.lineWidth = 1
-        specialBg.position = CGPoint(x: hw - specW/2 - 12, y: hh - 26); specialBg.zPosition = 100
-
-        specialLabel = SKLabelNode(text: "SPEC")
-        specialLabel.fontName = "AvenirNext-Bold"; specialLabel.fontSize = 10
-        specialLabel.fontColor = .cyan
-        specialLabel.verticalAlignmentMode = .center
-        specialLabel.horizontalAlignmentMode = .center
-        specialLabel.position = CGPoint(x: 0, y: 2)
-
-        let specTrack = SKShapeNode(rectOf: CGSize(width: specW - 8, height: 5), cornerRadius: 2)
-        specTrack.fillColor = UIColor(white: 0.3, alpha: 1)
-        specTrack.strokeColor = .clear; specTrack.position = CGPoint(x: 0, y: -7)
-
-        specialFill = SKShapeNode(rectOf: CGSize(width: specW - 8, height: 5), cornerRadius: 2)
-        specialFill.fillColor = .cyan; specialFill.strokeColor = .clear
-        specialFill.position = CGPoint(x: 0, y: -7); specialFill.xScale = 0
 
         // ── Pause button (top-centre-right) ───────────────────
-        pauseButton = SKShapeNode(rectOf: CGSize(width: 36, height: 26), cornerRadius: 6)
-        pauseButton.fillColor = UIColor(white: 0.2, alpha: 0.85)
-        pauseButton.strokeColor = UIColor(white: 1, alpha: 0.4); pauseButton.lineWidth = 1
-        pauseButton.position = CGPoint(x: hw - 130, y: hh - 26); pauseButton.zPosition = 100
+        pauseButton = SKSpriteNode(imageNamed: "pauseButton")
+        pauseButton.size = CGSize(width: 45, height: 42)
+        pauseButton.position = CGPoint(x: hw - 60, y: hh - 48); pauseButton.zPosition = 100
         pauseButton.name = "pauseButton"
-        let pauseIco = SKLabelNode(text: "⏸")
-        pauseIco.fontSize = 14; pauseIco.verticalAlignmentMode = .center
-        pauseIco.horizontalAlignmentMode = .center; pauseIco.name = "pauseButton"
-        pauseButton.addChild(pauseIco)
+        
 
         // ── Button A — attack (bottom-right) ──────────────────
         buttonA = SKShapeNode(circleOfRadius: 28)
@@ -145,13 +143,11 @@ class HUD: SKNode {
         super.init()
         zPosition = 99
 
-        addChild(barBg)
-        addChild(coinIcon); addChild(coinLabel)
+        addChild(charImg)
+        addChild(barBg); addChild(healthCrop)
+        addChild(specialBarBg)
+        addChild(specialCrop)
         addChild(waveLabel); addChild(countdownLabel)
-        addChild(specialBg)
-        specialBg.addChild(specialLabel)
-        specialBg.addChild(specTrack)
-        specialBg.addChild(specialFill)
         addChild(pauseButton)
         addChild(buttonA); addChild(buttonB)
     }
@@ -162,15 +158,14 @@ class HUD: SKNode {
 
     func updateHealth(current: CGFloat, maxHP: CGFloat) {
         let ratio = maxHP > 0 ? (current / maxHP) : 0
-        healthBarFill.xScale    = Swift.max(0, ratio)
-        healthBarFill.position.x = -(barMaxW - 4) * (1 - ratio) / 2
+        healthMask.xScale    = ratio
 
-        if ratio > 0.6      { healthBarFill.fillColor = .green }
-        else if ratio > 0.3 { healthBarFill.fillColor = .yellow }
-        else                { healthBarFill.fillColor = .red }
+        healthSprite.colorBlendFactor = 1.0
+        if ratio > 0.6      { healthSprite.color = .green }
+        else if ratio > 0.3 { healthSprite.color = .yellow }
+        else                { healthSprite.color = .red }
     }
 
-    func updateCoins(_ coins: Int) { coinLabel.text = "\(coins)" }
 
     func updateWave(_ wave: Int) {
         waveLabel.text = "Floor \(wave)"
@@ -189,21 +184,18 @@ class HUD: SKNode {
     func updateSpecial(killStreak: Int, isReady: Bool) {
         let ratio = CGFloat(Swift.min(killStreak, PlayerComponent.weakKillsNeeded))
                   / CGFloat(PlayerComponent.weakKillsNeeded)
-        specialFill.xScale = Swift.max(0, Swift.min(1, ratio))
+        specialMask.xScale = Swift.max(0, Swift.min(1, ratio))
 
         if isReady {
-            specialBg.strokeColor = .yellow; specialLabel.fontColor = .yellow
-            specialLabel.text = "READY"
-            if specialBg.action(forKey: "pulse") == nil {
-                specialBg.run(.repeatForever(.sequence([
+            if specialCrop.action(forKey: "pulse") == nil {
+                specialCrop.run(.repeatForever(.sequence([
                     .fadeAlpha(to: 0.55, duration: 0.35),
                     .fadeAlpha(to: 1.0,  duration: 0.35)
                 ])), withKey: "pulse")
             }
         } else {
-            specialBg.strokeColor = .cyan; specialLabel.fontColor = .cyan
-            specialLabel.text = "SPEC"
-            specialBg.removeAction(forKey: "pulse"); specialBg.alpha = 1
+            specialCrop.removeAction(forKey: "pulse");
+            specialCrop.alpha = 1
         }
     }
 
