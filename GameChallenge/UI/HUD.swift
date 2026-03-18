@@ -96,14 +96,15 @@ class HUD: SKNode {
 
         // ── Wave label (top-centre) ────────────────────────────
         waveLabel = SKLabelNode(text: "Floor 1")
-        waveLabel.fontName = "AvenirNext-Heavy"; waveLabel.fontSize = 16
+        waveLabel.fontName = AppManager.shared.secondaryFont
+        waveLabel.fontSize = 16
         waveLabel.fontColor = .white
         waveLabel.horizontalAlignmentMode = .center
         waveLabel.position = CGPoint(x: 0, y: hh - 24); waveLabel.zPosition = 100
 
         // Countdown (shown between waves, same position)
         countdownLabel = SKLabelNode(text: "")
-        countdownLabel.fontName = "AvenirNext-Heavy"; countdownLabel.fontSize = 13
+        countdownLabel.fontName = AppManager.shared.secondaryFont; countdownLabel.fontSize = 13
         countdownLabel.fontColor = UIColor(white: 0.7, alpha: 1)
         countdownLabel.horizontalAlignmentMode = .center
         countdownLabel.position = CGPoint(x: 0, y: hh - 42); countdownLabel.zPosition = 100
@@ -123,7 +124,7 @@ class HUD: SKNode {
         buttonA.position = CGPoint(x: hw - 146, y: -hh + 152); buttonA.zPosition = 100
         buttonA.name = "buttonA"
         let aLbl = SKLabelNode(text: "A")
-        aLbl.fontName = "AvenirNext-Heavy"; aLbl.fontSize = 22; aLbl.fontColor = .white
+        aLbl.fontName = AppManager.shared.secondaryFont; aLbl.fontSize = 22; aLbl.fontColor = .white
         aLbl.verticalAlignmentMode = .center; aLbl.horizontalAlignmentMode = .center
         aLbl.zPosition = 1; aLbl.name = "buttonA"
         buttonA.addChild(aLbl)
@@ -135,7 +136,7 @@ class HUD: SKNode {
         buttonB.position = CGPoint(x: hw - 200, y: -hh + 42); buttonB.zPosition = 100
         buttonB.name = "buttonB"
         let bLbl = SKLabelNode(text: "B")
-        bLbl.fontName = "AvenirNext-Heavy"; bLbl.fontSize = 17; bLbl.fontColor = .white
+        bLbl.fontName = AppManager.shared.secondaryFont; bLbl.fontSize = 17; bLbl.fontColor = .white
         bLbl.verticalAlignmentMode = .center; bLbl.horizontalAlignmentMode = .center
         bLbl.zPosition = 1; bLbl.name = "buttonB"
         buttonB.addChild(bLbl)
@@ -175,7 +176,7 @@ class HUD: SKNode {
 
     func showCountdown(_ seconds: Int) {
         if seconds > 0 {
-            countdownLabel.text = "Next wave in \(seconds)…"
+            countdownLabel.text = "Next floor in \(seconds)…"
         } else {
             countdownLabel.text = ""
         }

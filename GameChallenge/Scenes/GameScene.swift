@@ -45,6 +45,7 @@ class GameScene: SKScene {
     private var dyingEnemies: [Entity] = []
     private var itemEntities: [Entity] = []
     private var enemyProjectileEntities: [Entity] = []
+    private var ladderEntity:  Entity?
     
     // Systems
     private let movementSystem   = MovementSystem()
@@ -76,13 +77,16 @@ class GameScene: SKScene {
     
     private var lastCooldownUpdate: TimeInterval = 0
     
+    private var arrowNode:     SKSpriteNode?
+    private let arrowRadius:   CGFloat = 90   // distância da seta ao redor do player
+    
     // World size
     private let worldSize = CGSize(width: 1800, height: 1800)
     
     override init(size: CGSize) {
-//        pauseNode = Pause(size: size)
+        //        pauseNode = Pause(size: size)
         super.init(size: size)
-//        addChild(pauseNode)
+        //        addChild(pauseNode)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -119,7 +123,7 @@ class GameScene: SKScene {
         bg.position  = .zero   // anchorPoint 0.5,0.5 → centrado na origem
         bg.zPosition = -10
         addChild(bg)
-
+        
         // Borda visual opcional — remove se não quiser
         let border = SKShapeNode(rectOf: worldSize)
         border.strokeColor = UIColor(white: 0.4, alpha: 0.6)
@@ -132,25 +136,25 @@ class GameScene: SKScene {
     /// Mantém a câmera dentro dos limites do mundo para não mostrar além do background.
     private func clampCamera() {
         guard let view = self.view else { return }
-
+        
         // Metade do que a câmera enxerga na tela (em pontos do mundo)
         let visibleHalfW = view.bounds.width  / 2
         let visibleHalfH = view.bounds.height / 2
-
+        
         // Limites: a câmera não pode ir além de onde o background acaba
         let minX = -worldSize.width  / 2 + visibleHalfW
         let maxX =  worldSize.width  / 2 - visibleHalfW
         let minY = -worldSize.height / 2 + visibleHalfH
         let maxY =  worldSize.height / 2 - visibleHalfH
-
+        
         var camPos = cameraNode.position
-
+        
         // Se o mundo for menor que a tela num eixo, centraliza naquele eixo
         if minX > maxX { camPos.x = 0 } else { camPos.x = camPos.x.clamped(to: minX...maxX) }
         if minY > maxY { camPos.y = 0 } else { camPos.y = camPos.y.clamped(to: minY...maxY) }
-
+        
         cameraNode.position  = camPos
-//        pauseNode.position   = camPos
+        //        pauseNode.position   = camPos
     }
     
     /// Creates and adds the camera node, setting its zPosition and linking it to the scene.
@@ -210,27 +214,26 @@ class GameScene: SKScene {
             guard let self else { return }
             self.enemyEntities.append(EntityFactory.makeEnemy(type: type, at: pos, scene: self))
         }
+        
         waveSystem.onWaveStart = { [weak self] wave in
-            self?.hud.updateWave(wave)
-            self?.showWaveBanner(wave: wave)
-            self?.reshuffleBoxes()
-        }
-        waveSystem.onWaveEnd = { [weak self] completedWave in
-            // Exibe cutscene como overlay sobre o SKView — sem trocar de cena.
-            // Se não existir vídeo "cutscene_wave_N.mp4" no bundle, é pulada automaticamente.
-            guard let self, let view = self.view else { return }
-            self.isPausedByPlayer = true
+            guard let self else { return }
+            self.hud.updateWave(wave)
+            self.showWaveBanner(wave: wave)
+            self.reshuffleBoxes()
             
-            let cp = CutscenePlayer()
-            self.cutscenePlayer = cp   // retém para não ser desalocado
-            cp.play(wave: completedWave, over: view) { [weak self] in
-                // Vídeo terminou ou foi pulado → retoma o jogo
-                self?.cutscenePlayer  = nil
-                self?.isPausedByPlayer = false
+            if wave > 1 {
+                self.removeLadderAndArrow()
             }
         }
-        waveSystem.onWaveCountdown = { [weak self] seconds in
-            self?.hud.showCountdown(seconds)
+        
+        waveSystem.onWaveEnd = { [weak self] completedWave in
+            guard let self else { return }
+            
+            // Delay antes de spawnar a escada
+            self.run(.wait(forDuration: 1.5)) { [weak self] in
+                guard let self else { return }
+                self.spawnLadder()
+            }
         }
     }
     
@@ -326,6 +329,9 @@ class GameScene: SKScene {
         // 4b. Box collision — push movers out of indestructible boxes
         boxSystem.update(movers: [playerEntity!] + enemyEntities, boxes: boxEntities)
         
+        // 4c. Atualiza seta indicadora de direção da escada
+        updateArrow()
+        
         // 5. Camera follows player — clamped to world bounds
         if let node = playerEntity.get(TransformComponent.self)?.node {
             cameraNode.position = node.position
@@ -333,51 +339,38 @@ class GameScene: SKScene {
         }
         
         // 6. Attack & Shooting
-
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
 
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
+                let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
                     attackerEntity: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
-                    isSpecial: false,
+                    isSpecial: isSpecialNow,
                     enemySystem: enemySystem
                 )
-                hud.flashButtonA()
+                if !isSpecialNow { hud.flashButtonA() }
             }
-          
-            if inputSystem.specialPressed && pl.specialReady {
-                    inputSystem.specialPressed = false
-                    
-                    attackSystem.startSpecialAttack(
-                        player: playerEntity,
-                        enemies: enemyEntities,
-                        scene: self,
-                        enemySystem: enemySystem
-                    )
-                    
-                    // Zera a barra no componente e no HUD
-                    pl.killStreak = 0
-                    pl.specialReady = false
-                    hud.updateSpecial(killStreak: 0, isReady: false)
-                }
 
-            // Especial (Botão B) — só executa se isAttacking E isSpecialAttack estão ativos
-            if attack.isAttacking,
-               let sprite = playerEntity.get(SpriteComponent.self),
-               sprite.isSpecialAttack {
-                attackSystem.update(
-                    attackerEntity: playerEntity,
+            if inputSystem.specialPressed && pl.specialReady {
+                inputSystem.specialPressed = false
+
+                attackSystem.startSpecialAttack(
+                    player: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
-                    isSpecial: true,
                     enemySystem: enemySystem
                 )
+
+                // Zera a barra no componente e no HUD
+                pl.killStreak = 0
+                pl.specialReady = false
+                hud.updateSpecial(killStreak: 0, isReady: false)
             }
-            
-            // Tiro (Joystick direito) — estava faltando
+
+            // Tiro (Joystick direito)
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
                 if let pos = playerEntity.get(TransformComponent.self)?.node.position {
@@ -436,6 +429,17 @@ class GameScene: SKScene {
         }
         let collectedIDs = Set(collected.map { $0.id })
         coinEntities.removeAll { collectedIDs.contains($0.id) }
+        
+        // 9b. Colisão com escada → avança de andar
+        if let ladder = ladderEntity,
+           let ladderNode = ladder.get(TransformComponent.self)?.node,
+           let playerNode = playerEntity.get(TransformComponent.self)?.node {
+
+            if playerNode.position.distance(to: ladderNode.position) < 40 {
+                // NÃO zere ladderEntity aqui — advanceFloor → removeLadderAndArrow cuida disso
+                advanceFloor()
+            }
+        }
         
         // 10. Dead enemies
         var killedPts = 0
@@ -496,14 +500,14 @@ class GameScene: SKScene {
             sceneSize: worldSize,
             scene: self
         )
-
+        
         // 16. Item collection (Coleta)
         // Reutilizamos a lógica de distância das moedas para os itens
         let pickedItems = collisionSystem.checkCoinCollection(playerEntity: playerEntity, coins: itemEntities)
         for item in pickedItems {
             collisionSystem.handleItemPickup(player: playerEntity, item: item, scene: self)
         }
-
+        
         // Limpeza da lista
         let pickedIDs = Set(pickedItems.map { $0.id })
         itemEntities.removeAll { pickedIDs.contains($0.id) }
@@ -522,6 +526,34 @@ class GameScene: SKScene {
         attackJoystick.isUserInteractionEnabled = !isPausedByPlayer
         
         hud.showPauseOverlay(isPausedByPlayer)
+    }
+    
+    private func advanceFloor() {
+        // Esconde joysticks durante a cutscene
+        movementJoystick.isHidden = true
+        attackJoystick.isHidden   = true
+        isPausedByPlayer           = true
+        
+        removeLadderAndArrow()
+        
+        // Limpa inimigos restantes (edge case)
+        for e in enemyEntities {
+            e.get(TransformComponent.self)?.node.removeFromParent()
+        }
+        enemyEntities.removeAll()
+        
+        guard let view = self.view else { return }
+        
+        let cp = CutscenePlayer()
+        cutscenePlayer = cp
+        cp.play(wave: waveSystem.currentWave, over: view) { [weak self] in
+            guard let self else { return }
+            self.cutscenePlayer          = nil
+            self.isPausedByPlayer        = false
+            self.movementJoystick.isHidden = false
+            self.attackJoystick.isHidden   = false
+            self.waveSystem.startNextWave(sceneSize: self.worldSize)
+        }
     }
     
     /// Calculates time delta for frame updates, capped at 1/30th second.
@@ -557,7 +589,7 @@ class GameScene: SKScene {
     /// Displays a wave banner at the center of the screen.
     private func showWaveBanner(wave: Int) {
         let lbl = SKLabelNode(text: "FLOOR \(wave)")
-        lbl.fontName  = "AvenirNext-Heavy"
+        lbl.fontName  = AppManager.shared.secondaryFont
         lbl.fontSize  = 32
         lbl.fontColor = .white
         lbl.position  = .zero
@@ -583,6 +615,62 @@ class GameScene: SKScene {
         hud.showGameOver()
     }
     
+    // MARK: - Ladder & Arrow
+    
+    private func spawnLadder() {
+        guard let playerPos = playerEntity.get(TransformComponent.self)?.node.position else { return }
+
+        let margin: CGFloat = 150
+        var pos: CGPoint
+        repeat {
+            let x = CGFloat.random(in: -worldSize.width  / 2 + margin ... worldSize.width  / 2 - margin)
+            let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
+            pos = CGPoint(x: x, y: y)
+        } while pos.distance(to: playerPos) < 300
+
+        ladderEntity = EntityFactory.makeLadder(at: pos, scene: self)
+
+        // Passa o cameraNode — seta será filha da câmera
+        arrowNode = EntityFactory.makeArrow(attachedTo: cameraNode)
+    }
+    
+    private func removeLadderAndArrow() {
+        let ladderNode = ladderEntity?.get(TransformComponent.self)?.node
+        ladderEntity   = nil
+
+        ladderNode?.run(.sequence([
+            .fadeOut(withDuration: 0.3),
+            .removeFromParent()
+        ]))
+
+        arrowNode?.removeFromParent()
+        arrowNode = nil
+    }
+    
+    /// Atualiza a posição e rotação da seta para apontar para a escada.
+    private func updateArrow() {
+        guard
+            let arrow      = arrowNode,
+            let ladderNode = ladderEntity?.get(TransformComponent.self)?.node,
+            let playerNode = playerEntity.get(TransformComponent.self)?.node
+        else { return }
+
+        let playerPos = playerNode.position
+        let ladderPos = ladderNode.position
+
+        let dx    = ladderPos.x - playerPos.x
+        let dy    = ladderPos.y - playerPos.y
+        let angle = atan2(dy, dx)
+
+        // Como a seta é filha do cameraNode, a posição é relativa ao centro da tela
+        arrow.position = CGPoint(
+            x: cos(angle) * arrowRadius,
+            y: sin(angle) * arrowRadius
+        )
+
+        arrow.zRotation = angle - (.pi / 2)
+    }
+    
     // Made internal so systems (e.g., CollisionSystem) can trigger it.
     func clearEnemiesAroundPlayer() {
         
@@ -592,7 +680,7 @@ class GameScene: SKScene {
                 .removeFromParent()
             ]))
         }
-
+        
         enemyEntities.removeAll()
     }
     
@@ -609,7 +697,7 @@ class GameScene: SKScene {
             print("Player reviveu após anúncio")
             
             // revive o player
-
+            
             if let health = self.playerEntity.get(HealthComponent.self) {
                 health.current = health.max
                 health.isInvulnerable = true
@@ -627,9 +715,9 @@ class GameScene: SKScene {
             self.hud.hideGameOver()
             
             // retoma jogo
-
+            
             self.clearEnemiesAroundPlayer()
-
+            
             self.hud.hideGameOver()
             self.isPausedByPlayer = false
             

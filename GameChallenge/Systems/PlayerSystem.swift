@@ -98,6 +98,7 @@ class PlayerSystem {
             player.killStreak     = 0
             attack.isAttacking    = true
             attack.lastAttackTime = currentTime
+            attack.didApplyDamage = false
             sprite.isAttacking    = true
             sprite.isSpecialAttack = true
             sprite.currentFrame   = 0
