@@ -1,309 +1,96 @@
-# 🗡️ SwordWaves
+# 🏰 Zenith, the Endless Tower
 
-A **2D survival arena game** built with **SpriteKit** using a **pure
-Entity-Component-System (ECS) architecture**.
+**Ascenda, lute e sobreviva até o topo!**
 
-The player controls a sword-wielding hero trapped inside an arena where
-**endless waves of enemies spawn**.\
-Survive as long as possible, collect coins, charge your **special
-attack**, and defeat increasingly difficult waves.
+Zenith é um jogo indie de ação *top-down* focado em sobrevivência e combate. Desenvolvido nativamente para o ecossistema Apple utilizando **SpriteKit** e **GameplayKit**, o projeto adota a arquitetura **ECS (Entity-Component-System)** para garantir um código modular, escalável e de alta performance. 
 
-This project also serves as a **clean reference implementation of ECS
-architecture in SpriteKit using Swift**, focusing on modular systems and
-scalable game logic.
+Fortemente inspirado na estrutura de salas e progressão do clássico *The Binding of Isaac*, Zenith traz uma reviravolta ao focar intensamente no combate de curta distância com ataques físicos e mecânicas dinâmicas de colisão. Todos os assets utilizados no projeto são *open source*.
 
-------------------------------------------------------------------------
+## 🎮 Gameplay & Mecânicas
 
-# 🎮 Gameplay
+* **Objetivo:** Sobreviva às hordas de inimigos, limpe o andar e encontre a saída para subir a torre. Tente chegar ao andar mais alto que conseguir!
+* **Combate Dinâmico:** Domine o espaço ao seu redor utilizando ataques físicos brutais corpo a corpo, gerenciando o tempo de recarga e o posicionamento para evitar danos.
+* **Progressão Infinita:** A dificuldade aumenta gradativamente a cada novo andar da torre. Inimigos mais fortes, mais rápidos e em maior número tentarão impedir sua ascensão.
+* **Arquitetura ECS:** Tudo no jogo — de jogadores a inimigos e projéteis — é uma Entidade. Habilidades, saúde e movimento são Componentes modulares, processados por Sistemas do GameplayKit.
 
-SwordWaves is inspired by **survival arena games** where the player
-fights waves of enemies while managing positioning, timing attacks, and
-using special abilities strategically.
+## ⚒️ Guia para Desenvolvedores
 
-### Core Gameplay Loop
+Este repositório segue boas práticas de desenvolvimento colaborativo. Antes de contribuir, atente-se às orientações abaixo.
 
-1.  Player spawns in the arena
-2.  Enemy wave begins
-3.  Player defeats enemies
-4.  Enemies drop coins and special points
-5.  Special attack becomes available
-6.  Wave ends
-7.  Short pause
-8.  Next wave begins with higher difficulty
+### 0. Idioma
 
-The game continues indefinitely until the player dies.
+O idioma de mensagens de commit ou dos nomes para as branches devem **SEMPRE** estar em **inglês**.
 
-------------------------------------------------------------------------
+### 1. Organização de Branches
 
-# 🧠 Architecture
+* `main`: branch estável, sempre pronta para deploy.
+* `dev`: branch de integração, onde as features são testadas antes de irem para `main`.
+* `feat-TK<numero-da-task>/<nome-da-feature>`: novas funcionalidades e novos componentes ECS.
+* `fix/<nome-do-bug>`: correções de bugs.
+* `hotfix/<nome-do-hotfix>`: correções urgentes que devem ir direto para produção.
+* `test/<nome-do-teste>`: experimentos ou provas de conceito.
 
-The game follows a **pure ECS (Entity-Component-System)** architecture.
+⚠️ **Nunca** faça commits diretamente em `main` ou `dev`.
 
-This design separates **data**, **logic**, and **composition**, allowing
-the game to scale without creating complex inheritance hierarchies.
+### 2. Mensagens de Commit
 
-------------------------------------------------------------------------
+As mensagens de commit devem ser claras, concisas e no **imperativo presente** (como se fossem instruções).
 
-# 🧱 ECS Overview
+**Formato recomendado:** `<tipo>: <descrição curta>`
 
-## Entity
+**Tipos mais comuns:**
+* `feat`: nova funcionalidade (ex: novos inimigos, sistemas do GameplayKit).
+* `fix`: correção de bug.
+* `docs`: mudanças em documentação.
+* `style`: formatação (sem alteração de código).
+* `refactor`: refatoração de código (sem mudar comportamento, ex: otimização de um Component).
+* `test`: adição ou modificação de testes.
+* `chore`: manutenção, dependências, configs de assets, etc.
 
-An **Entity** is simply a container of components.
+✅ **Exemplos:**
+* `feat: add melee attack component to player entity`
+* `fix: collision detection on enemy spawn`
+* `docs: att README with ECS architecture`
 
-Entities contain **no behavior or logic**.
+❌ **Evite commits vagos como:**
+* `ajustes no combate`
+* `update inimigos`
+* `testes na torre`
 
-Example entity composition:
+### 3. Testes
 
-    Entity
-     ├── TransformComponent
-     ├── MovementComponent
-     ├── HealthComponent
-     └── AttackComponent
+Os testes são parte fundamental para garantir a qualidade e a estabilidade da arquitetura do jogo. Antes de abrir um PR, **rode todos os testes locais** e certifique-se de que estão passando.
 
-Examples of entities in the game:
+Use o framework de **Testing** padrão da Apple para escrever casos de teste.
 
--   Player
--   Enemy
--   Coin
+**Testes devem cobrir:**
+* Lógica de cálculo de dano, vida (HealthComponent) e morte das entidades.
+* Integrações críticas de ECS (garantir que os Systems processam os Components corretamente a cada *update frame*).
+* Lógica de geração de andares e *spawn* de inimigos.
 
-------------------------------------------------------------------------
+📌 *Pull requests sem cobertura mínima de testes lógicos serão rejeitados.*
 
-## Component
+### 4. Pull Requests (PRs)
 
-Components store **data only**.
+Os PRs devem ser pequenos, objetivos e com descrição clara do que está sendo alterado.
 
-They represent attributes of entities.
+**Antes de abrir um PR:**
+1. Certifique-se de que sua branch está atualizada com `dev`
 
-  Component            Responsibility
-  -------------------- -----------------------------
-  TransformComponent   position and SpriteKit node
-  MovementComponent    velocity and speed
-  HealthComponent      health value and health bar
-  AttackComponent      damage, range and cooldown
-  EnemyComponent       enemy type data
-  PlayerComponent      player state
-  InputComponent       player inputs
+Revise seu código localmente (verifique memory leaks com texturas do SpriteKit!).
 
-Example component:
+Rode os testes e garanta que todos passam.
 
-``` swift
-class MovementComponent {
-    var velocity: CGVector = .zero
-    let speed: CGFloat
-}
-```
+Descreva o que foi feito e o motivo da mudança.
 
-------------------------------------------------------------------------
+Checklist para PR:
 
-## System
+[ ] Código testado localmente
 
-Systems contain **gameplay logic**.
+[ ] Testes criados/atualizados
 
-A system iterates through entities that contain specific components.
+[ ] Assets open source devidamente creditados (se aplicável)
 
-Example:
+[ ] Documentação ajustada (se necessário)
 
-### MovementSystem
-
-Processes entities that contain:
-
-    TransformComponent
-    MovementComponent
-
-It updates their position every frame.
-
-------------------------------------------------------------------------
-
-# 📁 Project Structure
-
-    SwordWaves
-    │
-    ├── App
-    │   ├── POC_2DGameApp.swift
-    │   └── AppDelegate.swift
-    │
-    ├── Core
-    │   └── Entity.swift
-    │
-    ├── Components
-    │   ├── TransformComponent.swift
-    │   ├── MovementComponent.swift
-    │   ├── HealthComponent.swift
-    │   ├── AttackComponent.swift
-    │   ├── PlayerComponent.swift
-    │   ├── EnemyComponent.swift
-    │   └── InputComponent.swift
-    │
-    ├── Systems
-    │   ├── MovementSystem.swift
-    │   ├── MotionInputSystem.swift
-    │   ├── InputSystem.swift
-    │   ├── PlayerSystem.swift
-    │   ├── AttackSystem.swift
-    │   ├── EnemyAISystem.swift
-    │   ├── HealthSystem.swift
-    │   ├── CollisionSystem.swift
-    │   ├── WaveSystem.swift
-    │   └── CoinSpawnSystem.swift
-    │
-    ├── Entities
-    │   └── EntityFactory.swift
-    │
-    ├── Scenes
-    │   ├── GameScene.swift
-    │   ├── MenuScene.swift
-    │   └── ShopScene.swift
-    │
-    ├── UI
-    │   └── Joystick.swift
-    │
-    └── Utilities
-        └── CGPoint+Distance.swift
-
-------------------------------------------------------------------------
-
-# 🎮 Game Systems
-
-## MovementSystem
-
-Moves entities based on their velocity.
-
-    position += velocity * deltaTime
-
-Used by:
-
--   Player
--   Enemies
-
-------------------------------------------------------------------------
-
-## MotionInputSystem
-
-Reads device motion using **CoreMotion**.
-
-The player moves by **tilting the device**.
-
-Features:
-
--   adjustable sensitivity
--   deadzone filtering
--   normalized directional vector
-
-------------------------------------------------------------------------
-
-## EnemyAISystem
-
-Controls enemy movement behavior.
-
-Enemies constantly chase the player.
-
-Algorithm:
-
-    direction = playerPosition - enemyPosition
-    velocity = normalize(direction) * speed
-
-------------------------------------------------------------------------
-
-# 🌊 Wave System
-
-Controls enemy spawning and wave progression.
-
-Enemy difficulty increases every wave.
-
-Example wave scaling:
-
-  Wave   Weak   Normal   Strong
-  ------ ------ -------- --------
-  1      5      0        0
-  5      10     4        0
-  10     18     8        2
-  15     25     15       5
-
-Between waves there is a **5 second pause**.
-
-------------------------------------------------------------------------
-
-# 🪙 Coin System
-
-Coins are the main currency in the game.
-
-Players earn coins by:
-
--   collecting coin pickups
--   enemy drops
-
-Coins are stored persistently using:
-
-``` swift
-UserDefaults.standard.integer(forKey: "totalCoins")
-```
-
-------------------------------------------------------------------------
-
-# 👾 Enemy Types
-
-  Type     Health   Speed   Damage   Special Points
-  -------- -------- ------- -------- ----------------
-  Weak     30       90      5        1
-  Normal   80       65      12       2
-  Strong   200      45      25       5
-
-------------------------------------------------------------------------
-
-# ✨ Special Attack
-
-The special attack is charged by defeating enemies.
-
-Each enemy grants points:
-
-  Enemy    Points
-  -------- --------
-  Weak     1
-  Normal   2
-  Strong   5
-
-The special becomes available when:
-
-    points >= 5
-
-Effects:
-
--   damage ×3
--   attack range ×2.5
-
-------------------------------------------------------------------------
-
-# 🎨 Graphics
-
-Current graphics are placeholders.
-
-  Entity   Representation
-  -------- ----------------
-  Player   square
-  Enemy    circle
-  Coin     yellow circle
-
-Sprites and animations can easily replace them later.
-
-------------------------------------------------------------------------
-
-# 🚀 Running the Project
-
-1.  Open the project in **Xcode**
-2.  Select an **iOS device or simulator**
-3.  Run the project
-
-The game launches into the **MenuScene**.
-
-------------------------------------------------------------------------
-
-# 👨‍💻 Author
-
-**Bernardo Garcia Fensterseifer**
-
-------------------------------------------------------------------------
-
-# 📜 License
-
-This project is intended for **educational purposes and experimentation
-with ECS architecture in SpriteKit**.
+[ ] Sem conflitos com a dev
