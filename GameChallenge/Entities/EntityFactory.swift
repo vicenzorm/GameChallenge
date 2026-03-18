@@ -368,19 +368,19 @@ class EntityFactory {
         let entity = Entity()
 
         let node = SKSpriteNode(imageNamed: "ladder_sprite")
-        node.size      = CGSize(width: 64, height: 64)   // ← ajuste ao tamanho do asset
+        node.size      = CGSize(width: 124, height: 124)   // ← ajuste ao tamanho do asset
         node.position  = position
-        node.zPosition = 6
+        node.zPosition = 106
         node.alpha     = 0
 
         scene.addChild(node)
 
         node.run(.fadeIn(withDuration: 0.5))
 
-        node.run(.repeatForever(.sequence([
-            .moveBy(x: 0, y: 6, duration: 0.6),
-            .moveBy(x: 0, y: -6, duration: 0.6)
-        ])))
+//        node.run(.repeatForever(.sequence([
+//            .moveBy(x: 0, y: 6, duration: 0.6),
+//            .moveBy(x: 0, y: -6, duration: 0.6)
+//        ])))
 
         entity.add(TransformComponent(node: node))
         entity.add(LadderComponent())
