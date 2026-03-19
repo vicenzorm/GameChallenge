@@ -35,7 +35,7 @@ final class SoundManager {
 
     // MARK: - Play SFX
     func play(_ sound: SKAction, on node: SKNode) {
-        guard AppManager.shared.soundEnabled else { return }
+        guard AppManager.shared.sFXEnabled else { return }
         node.run(sound)
     }
 

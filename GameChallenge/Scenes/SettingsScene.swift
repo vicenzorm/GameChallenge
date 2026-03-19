@@ -58,9 +58,9 @@ class SettingsScene: SKScene {
     }
     
     func makeButtons() {
-        let musicSwitchBackground = AppManager.shared.soundEnabled ? "miniButtonBackground" : "miniButtonBackgroundDeactivated"
-        let sFXSwitchBackground = AppManager.shared.sFXEnabled ? "miniButtonBackground" : "miniButtonBackgroundDeactivated"
-        let hapticsSwitchBackground = AppManager.shared.hapticsEnabled ? "miniButtonBackground" : "miniButtonBackgroundDeactivated"
+        let musicSwitchBackground = AppManager.shared.soundEnabled ? "miniButtonBackground" : "miniButtonDeactivated"
+        let sFXSwitchBackground = AppManager.shared.sFXEnabled ? "miniButtonBackground" : "miniButtonDeactivated"
+        let hapticsSwitchBackground = AppManager.shared.hapticsEnabled ? "miniButtonBackground" : "miniButtonDeactivated"
         
         musicSwitch = makeButton(textureIcon: "musicIcon", textureBackground: musicSwitchBackground, label: "Music", pos: CGPoint(x: 300, y: 135), buttonIconSize: 40)
         musicSwitch.name = "musicSwitch"
@@ -114,16 +114,22 @@ class SettingsScene: SKScene {
             if let name = touchedNode.name ?? touchedNode.parent?.name {
                 switch name {
                 case "musicSwitch":
-                    print("")
-                    
+                    AppManager.shared.toggleSound()
+                    animatePressedToggle(toggle: musicSwitch, isOn: AppManager.shared.soundEnabled)
                 case "sFXSwitch":
-                    print("Leaderboard")
-                    
+                    AppManager.shared.toggleSFX()
+                    animatePressedToggle(toggle: sFXSwitch, isOn: AppManager.shared.sFXEnabled)
                 case "hapticsSwitch":
-                    print("Settings")
+                    AppManager.shared.toggleHaptics()
+                    animatePressedToggle(toggle: hapticsSwitch, isOn: AppManager.shared.hapticsEnabled)
                     
                 case "backButton":
-                    print("hehehe")
+                    let menuScene = MenuScene(size: self.size)
+                    menuScene.scaleMode = self.scaleMode
+                    self.run(sequence) {
+                        self.view?.presentScene(menuScene)
+                    }
+                    
                 default:
                     break
                 }

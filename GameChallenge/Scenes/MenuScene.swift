@@ -124,12 +124,12 @@ class MenuScene: SKScene {
                     }
     
                 case "leaderboardButton", "leaderboardLabel":
-                    print("Leaderboard")
+                    GameCenterManager.shared.showLeaderboard(from: self.view?.window?.rootViewController)
                     
                 case "settingsButton", "settingsLabel":
                     let settingsScene = SettingsScene(size: self.size)
                     settingsScene.scaleMode = self.scaleMode
-                    self.run(specialSequence) {
+                    self.run(sequence) {
                         self.view?.presentScene(settingsScene)
                     }
                     
