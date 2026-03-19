@@ -138,7 +138,7 @@ class EntityFactory {
         let node = SKSpriteNode(texture: idleDown)
         node.size      = CGSize(width: 35, height: 75)
         node.position  = position
-        node.zPosition = 6
+        node.zPosition = 7
         scene.addChild(node)
         
         entity.add(TransformComponent(node: node))
@@ -188,7 +188,7 @@ class EntityFactory {
             let node         = SKSpriteNode(texture: walkTextures.first)
             node.size        = skeletonSize
             node.position    = position
-            node.zPosition   = 7
+            node.zPosition   = 8
             scene.addChild(node)
             
             let barWidth: CGFloat  = skeletonSize.width * 1.2
@@ -370,7 +370,7 @@ class EntityFactory {
         let node = SKSpriteNode(imageNamed: "ladder_sprite")
         node.size      = CGSize(width: 124, height: 124)   // ← ajuste ao tamanho do asset
         node.position  = position
-        node.zPosition = 106
+        node.zPosition = 6
         node.alpha     = 0
 
         scene.addChild(node)
@@ -559,8 +559,12 @@ class EntityFactory {
         let node = SKSpriteNode(imageNamed: obstacleType.assetName)
         node.size      = CGSize(width: 50, height: 50)
         node.position  = position
-        node.zPosition = 8
+        node.zPosition = 5
         scene.addChild(node)
+        
+        if let anim = obstacleType.loopAnimation {
+            node.run(anim)
+        }
         
         entity.add(TransformComponent(node: node))
         entity.add(BoxComponent(type: obstacleType))

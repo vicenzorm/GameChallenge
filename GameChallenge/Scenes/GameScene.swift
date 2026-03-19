@@ -46,6 +46,7 @@ class GameScene: SKScene {
     private var itemEntities: [Entity] = []
     private var enemyProjectileEntities: [Entity] = []
     private var ladderEntity:  Entity?
+    private var darknessOverlay: DarknessOverlay!
     
     // Systems
     private let movementSystem   = MovementSystem()
@@ -99,6 +100,18 @@ class GameScene: SKScene {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         setupWorld()
         setupCamera()
+        setupDarkness()
+        // DIAGNÓSTICO — remove depois
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            print("darknessOverlay parent: \(self.darknessOverlay.parent.debugDescription)")
+            print("overlayNode filhos: \(self.darknessOverlay.children.count)")
+            if let child = self.darknessOverlay.children.first as? SKSpriteNode {
+                print("overlayNode size: \(child.size)")
+                print("overlayNode texture: \(String(describing: child.texture))")
+                print("overlayNode zPosition: \(child.zPosition)")
+                print("overlayNode alpha: \(child.alpha)")
+            }
+        }
         setupJoystick()
         setupHUD(view: view)
         setupPlayer()
@@ -180,6 +193,12 @@ class GameScene: SKScene {
         attackJoystick.isUserInteractionEnabled = true
         
         layoutJoystick()
+    }
+    
+    private func setupDarkness() {
+        guard let view else { return }
+        darknessOverlay = DarknessOverlay(screenSize: view.bounds.size)
+        cameraNode.addChild(darknessOverlay)
     }
     
     /// Positions the joystick in the bottom-left of the camera's visible area.
@@ -511,6 +530,13 @@ class GameScene: SKScene {
         // Limpeza da lista
         let pickedIDs = Set(pickedItems.map { $0.id })
         itemEntities.removeAll { pickedIDs.contains($0.id) }
+        
+        if let playerNode = playerEntity.get(TransformComponent.self)?.node {
+            darknessOverlay.update(
+                playerPositionInScene: playerNode.position,
+                cameraPosition: cameraNode.position
+            )
+        }
         
     }
     
