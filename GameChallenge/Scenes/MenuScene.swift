@@ -129,7 +129,7 @@ class MenuScene: SKScene {
                 case "settingsButton", "settingsLabel":
                     let settingsScene = SettingsScene(size: self.size)
                     settingsScene.scaleMode = self.scaleMode
-                    self.run(specialSequence) {
+                    self.run(sequence) {
                         self.view?.presentScene(settingsScene)
                     }
                     
