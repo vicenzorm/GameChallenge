@@ -184,14 +184,14 @@ class GameScene: SKScene {
     
     /// Initializes the joystick, adds it to the camera, and makes it visible and interactive.
     private func setupJoystick() {
-        movementJoystick = Joystick()
+        movementJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_ball")
         cameraNode.addChild(movementJoystick)
         movementJoystick.isUserInteractionEnabled = true
-        
-        attackJoystick = Joystick()
+
+        attackJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_shuriken")
         cameraNode.addChild(attackJoystick)
         attackJoystick.isUserInteractionEnabled = true
-        
+
         layoutJoystick()
     }
     
