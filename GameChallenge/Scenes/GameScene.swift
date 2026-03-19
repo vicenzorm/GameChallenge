@@ -634,6 +634,8 @@ class GameScene: SKScene {
     private func triggerGameOver() {
         guard !isPausedByPlayer else { return }
         isPausedByPlayer = true
+        let currentFloor = waveSystem.currentWave
+        GameCenterManager.shared.submitScore(floor: (currentFloor))
         movementJoystick.isHidden = true
         movementJoystick.isUserInteractionEnabled = false
         attackJoystick.isHidden = true
@@ -780,6 +782,9 @@ class GameScene: SKScene {
                             button.alpha = 0.7
                         }
                         
+                    case "leaderboardButton":
+                        GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
+                        
                     case "pauseButton":
                         togglePause()
                         
@@ -791,6 +796,8 @@ class GameScene: SKScene {
                         
                     case "restartButton", "menuFromGameOver", "menuFromPause":
                         handleMenuNavigation(nodeName: nodeName, view: view)
+                        
+                    
                         
                     default:
                         break
