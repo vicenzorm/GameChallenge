@@ -562,6 +562,10 @@ class EntityFactory {
         node.zPosition = 5
         scene.addChild(node)
         
+        if let anim = obstacleType.loopAnimation {
+            node.run(anim)
+        }
+        
         entity.add(TransformComponent(node: node))
         entity.add(BoxComponent(type: obstacleType))
         
