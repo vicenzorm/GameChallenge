@@ -483,7 +483,7 @@ class GameScene: SKScene {
         }
         
         // 13. HUD coins
-        if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
+//        if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
         
         // 14. Wave + coin spawn
         if let node = playerEntity.get(TransformComponent.self)?.node {
