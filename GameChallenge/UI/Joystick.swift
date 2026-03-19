@@ -8,56 +8,51 @@
 import SpriteKit
 
 class Joystick: SKNode {
-    private let baseNode: SKShapeNode
-    private let stickNode: SKShapeNode
+    private let baseNode: SKSpriteNode
+    private let stickNode: SKSpriteNode
     private let radius: CGFloat = 50
-    
+
     private var trackingTouch: UITouch?
-    
+
     var velocity: CGPoint = .zero
     var isTouching = false
-    
-    override init() {
-        // Create base
-        baseNode = SKShapeNode(circleOfRadius: radius)
+
+    /// - Parameters:
+    ///   - baseAsset:  nome do asset para o disco externo (ex: "joystick_base")
+    ///   - stickAsset: nome do asset para o knob interno (ex: "joystick_ball" ou "joystick_shuriken")
+    init(baseAsset: String = "joystick_base", stickAsset: String = "joystick_ball") {
+        // Base (anel externo)
+        baseNode = SKSpriteNode(imageNamed: baseAsset)
         baseNode.name = "joystickBase"
-        baseNode.fillColor = UIColor(white: 0.3, alpha: 0.5)
-        baseNode.strokeColor = UIColor.clear
-                
-        // Create stick
-        stickNode = SKShapeNode(circleOfRadius: radius * 0.5) // 25 de raio
+        baseNode.size = CGSize(width: radius * 1.8, height: radius * 1.8)
+        baseNode.zPosition = 999
+
+        // Stick (knob interno — metade do raio da base)
+        stickNode = SKSpriteNode(imageNamed: stickAsset)
         stickNode.name = "joystickStick"
-        stickNode.fillColor = UIColor(white: 0.8, alpha: 0.8)
-        stickNode.strokeColor = UIColor.clear
+        stickNode.size = CGSize(width: radius, height: radius)
+        stickNode.zPosition = 1000
         
         super.init()
-        
-        // Make them circular
-        baseNode.physicsBody = nil
-        stickNode.physicsBody = nil
-        
-        // Add to node
+
         addChild(baseNode)
         addChild(stickNode)
-        
-        // Set zPosition to be above everything
-        zPosition = 1000
-        
-        // Enable touch handling
+
+        zPosition = 1001
         isUserInteractionEnabled = true
     }
-    
+
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
+    // MARK: - Touch Handling
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if trackingTouch != nil { return }
-        
+        guard trackingTouch == nil else { return }
         for touch in touches {
             let location = touch.location(in: self)
-            let distance = hypot(location.x, location.y)
-            if distance <= radius + 30 {
+            if hypot(location.x, location.y) <= radius + 30 {
                 trackingTouch = touch
                 isTouching = true
                 updateStickPosition(with: location)
@@ -65,57 +60,41 @@ class Joystick: SKNode {
             }
         }
     }
-    
+
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard isTouching, let touch = trackingTouch, touches.contains(touch) else { return }
-        let location = touch.location(in: self)
-        updateStickPosition(with: location)
+        updateStickPosition(with: touch.location(in: self))
     }
-    
+
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let touch = trackingTouch, touches.contains(touch) {
-            resetJoystick()
-        }
+        if let touch = trackingTouch, touches.contains(touch) { resetJoystick() }
     }
-    
+
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let touch = trackingTouch, touches.contains(touch) {
-            resetJoystick()
-        }
+        if let touch = trackingTouch, touches.contains(touch) { resetJoystick() }
     }
-    
+
+    // MARK: - Private
+
     private func updateStickPosition(with location: CGPoint) {
-        // Calculate distance from center
         let distance = hypot(location.x, location.y)
-        
+
         if distance <= radius {
-            // Stick within radius
             stickNode.position = location
-            velocity = CGPoint(
-                x: location.x / radius,
-                y: location.y / radius
-            )
+            velocity = CGPoint(x: location.x / radius, y: location.y / radius)
         } else {
-            // Stick at edge of radius
             let angle = atan2(location.y, location.x)
-            stickNode.position = CGPoint(
-                x: cos(angle) * radius,
-                y: sin(angle) * radius
-            )
-            velocity = CGPoint(
-                x: cos(angle),
-                y: sin(angle)
-            )
+            stickNode.position = CGPoint(x: cos(angle) * radius, y: sin(angle) * radius)
+            velocity = CGPoint(x: cos(angle), y: sin(angle))
         }
-        
-        // Normalize velocity for consistent speed
+
         let magnitude = hypot(velocity.x, velocity.y)
         if magnitude > 0 {
             velocity.x /= magnitude
             velocity.y /= magnitude
         }
     }
-    
+
     private func resetJoystick() {
         trackingTouch = nil
         isTouching = false

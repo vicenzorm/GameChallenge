@@ -13,8 +13,8 @@ import SpriteKit
 class HUD: SKNode {
 
     private let waveLabel:      SKLabelNode
-    private let buttonA:        SKShapeNode
-    private let buttonB:        SKShapeNode
+    private let buttonA: SKSpriteNode
+    private let buttonB: SKSpriteNode
     private let pauseButton:    SKSpriteNode
     private let countdownLabel: SKLabelNode
     
@@ -118,28 +118,16 @@ class HUD: SKNode {
         
 
         // ── Button A — attack (bottom-right) ──────────────────
-        buttonA = SKShapeNode(circleOfRadius: 28)
-        buttonA.fillColor = UIColor(red: 0.15, green: 0.6, blue: 0.15, alpha: 0.88)
-        buttonA.strokeColor = .white; buttonA.lineWidth = 2
-        buttonA.position = CGPoint(x: hw - 146, y: -hh + 152); buttonA.zPosition = 100
+        buttonA = SKSpriteNode(imageNamed: "attack_button")
+        buttonA.size = CGSize(width: 80, height: 80)
+        buttonA.position = CGPoint(x: hw - 154, y: -hh + 152); buttonA.zPosition = 100
         buttonA.name = "buttonA"
-        let aLbl = SKLabelNode(text: "A")
-        aLbl.fontName = AppManager.shared.secondaryFont; aLbl.fontSize = 22; aLbl.fontColor = .white
-        aLbl.verticalAlignmentMode = .center; aLbl.horizontalAlignmentMode = .center
-        aLbl.zPosition = 1; aLbl.name = "buttonA"
-        buttonA.addChild(aLbl)
 
         // ── Button B — special (bottom-right) ─────────────────
-        buttonB = SKShapeNode(circleOfRadius: 22)
-        buttonB.fillColor = UIColor(red: 0.1, green: 0.2, blue: 0.7, alpha: 0.88)
-        buttonB.strokeColor = .cyan; buttonB.lineWidth = 2
-        buttonB.position = CGPoint(x: hw - 200, y: -hh + 42); buttonB.zPosition = 100
+        buttonB = SKSpriteNode(imageNamed: "special_button_off")
+        buttonB.size = CGSize(width: 88, height: 88)
+        buttonB.position = CGPoint(x: hw - 200, y: -hh + 80); buttonB.zPosition = 100
         buttonB.name = "buttonB"
-        let bLbl = SKLabelNode(text: "B")
-        bLbl.fontName = AppManager.shared.secondaryFont; bLbl.fontSize = 17; bLbl.fontColor = .white
-        bLbl.verticalAlignmentMode = .center; bLbl.horizontalAlignmentMode = .center
-        bLbl.zPosition = 1; bLbl.name = "buttonB"
-        buttonB.addChild(bLbl)
 
         super.init()
         zPosition = 99
@@ -201,9 +189,7 @@ class HUD: SKNode {
     }
 
     func setButtonBActive(_ active: Bool) {
-        buttonB.fillColor = active
-            ? UIColor(red: 0.0, green: 0.55, blue: 0.85, alpha: 0.95)
-            : UIColor(red: 0.1, green: 0.2,  blue: 0.7,  alpha: 0.88)
+        buttonB.texture = SKTexture(imageNamed: active ? "special_button_on" : "special_button_off")
     }
 
     func flashButtonA() {
