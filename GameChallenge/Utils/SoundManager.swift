@@ -19,8 +19,9 @@ final class SoundManager {
     let attack1 = SKAction.playSoundFileNamed("attack1.wav", waitForCompletion: false)
     let attack2 = SKAction.playSoundFileNamed("attack2.mp3", waitForCompletion: false)
 
-    let damage = SKAction.playSoundFileNamed("damage.wav", waitForCompletion: false)
-    let death = SKAction.playSoundFileNamed("death.wav", waitForCompletion: false)
+    let damage = SKAction.playSoundFileNamed("hit1.wav", waitForCompletion: false)
+    let playerDamaged = SKAction.playSoundFileNamed("hit1.wav", waitForCompletion: false)
+    let death = SKAction.playSoundFileNamed("hit1.wav", waitForCompletion: false)
     let enemyKilled = SKAction.playSoundFileNamed("enemyKilled.wav", waitForCompletion: false)
 
     let footstep = SKAction.playSoundFileNamed("footstep.wav", waitForCompletion: false)

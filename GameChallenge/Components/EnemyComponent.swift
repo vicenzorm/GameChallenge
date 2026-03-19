@@ -34,11 +34,11 @@ class EnemyComponent: Component {
 
         var damage: CGFloat {
             switch self {
-            case .weak:    return 8
-            case .normal:  return 14
-            case .strong:  return 22
-            case .shooter: return 10
-            case .boss:    return 30
+            case .weak:    return 8    // ok — morre em ~12 colisões
+            case .normal:  return 12   // era 14, suaviza um pouco
+            case .strong:  return 18   // era 22
+            case .shooter: return 8    // ok — atirador não deve bater forte de perto
+            case .boss:    return 25   // era 30 — ainda assustador, mas não one-shots
             }
         }
 
@@ -48,7 +48,7 @@ class EnemyComponent: Component {
             case .normal:  return 34
             case .strong:  return 50
             case .shooter: return 28
-            case .boss:    return 90
+            case .boss:    return 160
             }
         }
 

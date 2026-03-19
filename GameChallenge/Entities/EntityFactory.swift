@@ -146,7 +146,9 @@ class EntityFactory {
         entity.add(MovementComponent(speed: 220))
         entity.add(PlayerComponent())
         entity.add(InputComponent())
-        entity.add(AttackComponent(damage: 400, range: 70, cooldown: 0.4))
+        entity.add(AttackComponent(damage: 24, range: 110, cooldown: 0.4))
+        //  dano melee: 18  → weak morre em ~2 hits, boss em ~17 hits
+        //  especial vira 18 * 20 = 360 → ainda poderoso, mas não quebra o jogo
         entity.add(SpriteComponent(
             downTextures: downTextures, upTextures: upTextures,
             leftTextures: leftTextures, rightTextures: rightTextures,
@@ -593,7 +595,8 @@ class EntityFactory {
         node.run(.repeatForever(animate))
         
         entity.add(TransformComponent(node: node))
-        entity.add(ProjectileComponent(damage: 15, direction: direction, speed: 600))
+        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 600))
+        //  ligeiramente abaixo do melee — tiro é mais seguro, então faz menos dano
         
         SoundManager.shared.play(SoundManager.shared.attack2, on: node)
         
@@ -622,7 +625,8 @@ class EntityFactory {
         node.run(.repeatForever(animate))
         
         entity.add(TransformComponent(node: node))
-        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 380))
+        entity.add(ProjectileComponent(damage: 10, direction: direction, speed: 380))
+        //  era 12, desce pra 10 — fireball é mais lenta, justo ser um pouco mais fraca
         
         return entity
     }}

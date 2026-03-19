@@ -1,17 +1,15 @@
 {
   "images" : [
     {
-      "filename" : "Screenshot_2026-03-18_at_21.18.00-removebg-preview.png",
+      "filename" : "Sprite-0003.svg",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "Screenshot_2026-03-18_at_21.18.00-removebg-preview 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "Screenshot_2026-03-18_at_21.18.00-removebg-preview 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

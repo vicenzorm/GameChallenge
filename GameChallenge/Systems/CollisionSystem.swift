@@ -2,72 +2,82 @@
 //  CollisionSystem.swift
 //  POC-2DGame
 //
-//  Created by Bernardo Garcia Fensterseifer on 12/03/26.
-//
 
 import SpriteKit
-import CoreMotion
 import Foundation
 
 class CollisionSystem {
+
+    // Callback chamado pelo GameScene para acionar o shake + flash
+    // Atribuído em GameScene: collisionSystem.onPlayerHit = { [weak self] node in ... }
+    var onPlayerHit: ((SKNode) -> Void)?
+
+    // Cooldown para evitar que shake e flash disparem todo frame durante colisão contínua
+    private var hitFeedbackCooldown: TimeInterval = 0
+    private let hitFeedbackInterval: TimeInterval = 0.4  // ← segundos entre cada feedback visual
+
     func checkEnemyPlayerCollisions(
         playerEntity: Entity,
         enemies: [Entity],
         deltaTime: TimeInterval,
         enemySystem: EnemySystem,
-        soundManager: SoundManager = .shared    // ← novo parâmetro com default
+        soundManager: SoundManager = .shared
     ) {
         guard
             let playerTransform = playerEntity.get(TransformComponent.self),
             let playerHealth    = playerEntity.get(HealthComponent.self)
         else { return }
-        
+
+        guard !playerHealth.isInvulnerable else { return }
+
         let pPos = playerTransform.node.position
-        
+
+        // Desconta o cooldown do feedback visual
+        hitFeedbackCooldown = max(0, hitFeedbackCooldown - deltaTime)
+
+        var tookDamageThisFrame = false
+
         for enemy in enemies {
             guard
                 let enemyTransform = enemy.get(TransformComponent.self),
                 let enemyComp      = enemy.get(EnemyComponent.self)
             else { continue }
-            
-            let minDist: CGFloat = 24 + enemyComp.type.radius
+
+            let minDist = 24 + enemyComp.type.radius
             guard pPos.distance(to: enemyTransform.node.position) < minDist else { continue }
-            
-            playerHealth.current = Swift.max(0,
-                                             playerHealth.current - enemyComp.type.damage * CGFloat(deltaTime))
-            
-            // Animação de ataque
+
+            // ── Dano ──────────────────────────────────────────────────────
+            playerHealth.current = Swift.max(
+                0,
+                playerHealth.current - enemyComp.type.damage * CGFloat(deltaTime)
+            )
+            tookDamageThisFrame = true
+
+            // ── Animação de ataque do inimigo ─────────────────────────────
             enemySystem.triggerSkeletonAtk(enemy: enemy)
-            
-            // Som de ataque por tipo — throttle via EnemyComponent para não repetir todo frame
-            if enemyComp.canPlayAttackSound {
-                enemyComp.canPlayAttackSound = false
-                enemyComp.attackSoundCooldown = 0.5   // segundos antes de poder tocar de novo
-                
-                switch enemyComp.type {
-                case .weak:
-                    soundManager.play(soundManager.swordAttack1, on: enemyTransform.node)
-                case .normal:
-                    soundManager.play(soundManager.swordAttack2, on: enemyTransform.node)
-                case .strong, .shooter, .boss:
-                    soundManager.play(soundManager.monsterBite, on: enemyTransform.node)
-                }
-                if pPos.distance(to: enemyTransform.node.position) < minDist {
-                    
-                    if playerHealth.isInvulnerable {
-                        print("Colidiu mas tá protegido!")
-                        continue
-                    }
-                    
-                    playerHealth.current = Swift.max(
-                        0,
-                        playerHealth.current - enemyComp.type.damage * CGFloat(deltaTime)
-                    )
-                }
+
+            // ── Som (throttle via EnemyComponent) ─────────────────────────
+            guard enemyComp.canPlayAttackSound else { continue }
+            enemyComp.canPlayAttackSound  = false
+            enemyComp.attackSoundCooldown = 0.5
+
+            switch enemyComp.type {
+            case .weak:    soundManager.play(soundManager.swordAttack1, on: enemyTransform.node)
+            case .normal:  soundManager.play(soundManager.swordAttack2, on: enemyTransform.node)
+            case .strong, .shooter, .boss:
+                           soundManager.play(soundManager.monsterBite,  on: enemyTransform.node)
             }
         }
+
+        // ── Shake + flash: dispara no máximo 1x a cada hitFeedbackInterval ──
+        if tookDamageThisFrame && hitFeedbackCooldown == 0 {
+            hitFeedbackCooldown = hitFeedbackInterval
+            onPlayerHit?(playerTransform.node)
+        }
     }
-    
+
+    // MARK: - Coin / Item collection
+
     func checkCoinCollection(playerEntity: Entity, coins: [Entity]) -> [Entity] {
         guard let playerTransform = playerEntity.get(TransformComponent.self) else { return [] }
         let pPos = playerTransform.node.position
@@ -76,28 +86,24 @@ class CollisionSystem {
             return pPos.distance(to: t.node.position) < 32
         }
     }
-    
-    func handleItemPickup(player: Entity, item: Entity, scene: GameScene){
+
+    func handleItemPickup(player: Entity, item: Entity, scene: GameScene) {
         guard let itemType = item.get(ItemComponent.self)?.type else { return }
-        
-        switch itemType{
+
+        switch itemType {
         case .healthPotion:
             if let hp = player.get(HealthComponent.self) {
                 hp.current = min(hp.max, hp.current + 50)
             }
-            
         case .specialCharge:
             if let pl = player.get(PlayerComponent.self) {
-                // Example effect: grant enough points to make special ready
-                pl.killStreak = max(pl.killStreak, PlayerComponent.weakKillsNeeded)
+                pl.killStreak   = max(pl.killStreak, PlayerComponent.weakKillsNeeded)
                 pl.specialReady = true
             }
-            
         case .killAll:
             scene.clearEnemiesAroundPlayer()
         }
-        
+
         item.get(TransformComponent.self)?.node.removeFromParent()
     }
 }
-

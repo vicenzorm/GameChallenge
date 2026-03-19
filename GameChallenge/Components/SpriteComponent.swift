@@ -11,6 +11,8 @@ import Foundation
 class SpriteComponent: Component {
     
     var isSpecialAttack: Bool = false
+    
+    var isFlashing: Bool = false
 
     // Movimento
     var downTextures:  [SKTexture]

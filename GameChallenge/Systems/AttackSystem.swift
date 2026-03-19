@@ -27,6 +27,11 @@ class AttackSystem {
         let origin = attackerTransform.node.position
         let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 20  : attackComp.damage
+        
+        // ── Raio de contato (inimigos colados sempre tomam dano) ─────────
+        // Independente da direção — garante que inimigos sobrepostos ao player
+        // sempre sejam atingidos. Ajuste contactRadius para mais ou menos alcance.
+        let contactRadius: CGFloat = 38   // ← raio do "bolsão" ao redor do player
 
         var didHitAny = false
 
@@ -40,6 +45,9 @@ class AttackSystem {
             let dist    = toEnemy.length
 
             guard dist <= range else { continue }
+            
+            // Inimigos dentro do contactRadius sempre tomam dano (sem checar direção)
+            let inContactZone = dist <= contactRadius
 
             // Ataque normal: só acerta inimigos na metade frontal
             if !isSpecial {
@@ -56,20 +64,20 @@ class AttackSystem {
         }
 
         // Visual do hitbox — só aparece se acertou pelo menos um inimigo
-        if didHitAny {
-            attackComp.attackNode?.removeFromParent()
-            let arc = SKShapeNode(circleOfRadius: range)
-            arc.fillColor   = isSpecial
-                ? UIColor.cyan.withAlphaComponent(0.25)
-                : UIColor.white.withAlphaComponent(0.15)
-            arc.strokeColor = isSpecial ? .cyan : .white
-            arc.lineWidth   = 1.5
-            arc.position    = origin
-            arc.zPosition   = 5
-            scene.addChild(arc)
-            attackComp.attackNode = arc
-            arc.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
-        }
+//        if didHitAny {
+//            attackComp.attackNode?.removeFromParent()
+//            let arc = SKShapeNode(circleOfRadius: range)
+//            arc.fillColor   = isSpecial
+//                ? UIColor.cyan.withAlphaComponent(0.25)
+//                : UIColor.white.withAlphaComponent(0.15)
+//            arc.strokeColor = isSpecial ? .cyan : .white
+//            arc.lineWidth   = 1.5
+//            arc.position    = origin
+//            arc.zPosition   = 5
+//            scene.addChild(arc)
+//            attackComp.attackNode = arc
+//            arc.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+//        }
 
         attackComp.didApplyDamage = true
     }

@@ -84,6 +84,8 @@ class GameScene: SKScene {
     // World size
     private let worldSize = CGSize(width: 1800, height: 1800)
     
+    private let shakeNode = SKNode()
+    
     override init(size: CGSize) {
         //        pauseNode = Pause(size: size)
         super.init(size: size)
@@ -115,6 +117,26 @@ class GameScene: SKScene {
         setupJoystick()
         setupHUD(view: view)
         setupPlayer()
+        collisionSystem.onPlayerHit = { [weak self] playerNode in
+            guard let self, let sprite = playerNode as? SKSpriteNode else { return }
+
+            // ── Shake ─────────────────────────────────────────────────────
+            self.shakeCamera()
+
+            // ── Som ───────────────────────────────────────────────────────
+            SoundManager.shared.play(SoundManager.shared.playerDamaged, on: playerNode)
+
+            // ── Flash (colorize direto no sprite) ─────────────────────────
+            guard let spriteComp = self.playerEntity.get(SpriteComponent.self) else { return }
+            spriteComp.isFlashing = true
+            sprite.removeAction(forKey: "hitFlash")
+            sprite.run(.sequence([
+                .colorize(with: .red, colorBlendFactor: 0.9, duration: 0),
+                .wait(forDuration: 0.08),
+                .colorize(withColorBlendFactor: 0.0, duration: 0.12),
+                .run { spriteComp.isFlashing = false }
+            ]), withKey: "hitFlash")
+        }
         setupBoxes()
         setupWaveCallbacks()
         setupCoinCallbacks()
@@ -172,10 +194,11 @@ class GameScene: SKScene {
     
     /// Creates and adds the camera node, setting its zPosition and linking it to the scene.
     private func setupCamera() {
-        cameraNode          = SKCameraNode()
+        cameraNode           = SKCameraNode()
         cameraNode.zPosition = 50
         addChild(cameraNode)
         camera = cameraNode
+        cameraNode.addChild(shakeNode)   // ← adicione essa linha
     }
     
     func addItemEntity(_ entity: Entity) {
@@ -185,11 +208,11 @@ class GameScene: SKScene {
     /// Initializes the joystick, adds it to the camera, and makes it visible and interactive.
     private func setupJoystick() {
         movementJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_ball")
-        cameraNode.addChild(movementJoystick)
+        shakeNode.addChild(movementJoystick)   // era cameraNode
         movementJoystick.isUserInteractionEnabled = true
 
         attackJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_shuriken")
-        cameraNode.addChild(attackJoystick)
+        shakeNode.addChild(attackJoystick)     // era cameraNode
         attackJoystick.isUserInteractionEnabled = true
 
         layoutJoystick()
@@ -198,7 +221,7 @@ class GameScene: SKScene {
     private func setupDarkness() {
         guard let view else { return }
         darknessOverlay = DarknessOverlay(screenSize: view.bounds.size)
-        cameraNode.addChild(darknessOverlay)
+        shakeNode.addChild(darknessOverlay)    // era cameraNode
     }
     
     /// Positions the joystick in the bottom-left of the camera's visible area.
@@ -219,7 +242,7 @@ class GameScene: SKScene {
     /// Creates and adds the HUD to the camera node.
     private func setupHUD(view: SKView) {
         hud = HUD(screenSize: view.bounds.size)
-        cameraNode.addChild(hud)
+        shakeNode.addChild(hud)                // era cameraNode
     }
     
     /// Spawns the player entity at the scene center.
@@ -392,13 +415,17 @@ class GameScene: SKScene {
             // Tiro (Joystick direito)
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
-                if let pos = playerEntity.get(TransformComponent.self)?.node.position {
-                    let projectile = EntityFactory.makeProjectile(
-                        at: pos,
-                        direction: attack.shootDirection,
-                        scene: self
-                    )
-                    projectileEntities.append(projectile)
+                let now = Date.timeIntervalSinceReferenceDate  // ou passe `currentTime` do update
+                if currentTime - attack.lastShotTime >= attack.shootCooldown {
+                    attack.lastShotTime = currentTime
+                    if let pos = playerEntity.get(TransformComponent.self)?.node.position {
+                        let projectile = EntityFactory.makeProjectile(
+                            at: pos,
+                            direction: attack.shootDirection,
+                            scene: self
+                        )
+                        projectileEntities.append(projectile)
+                    }
                 }
             }
         }
@@ -538,6 +565,22 @@ class GameScene: SKScene {
             )
         }
         
+    }
+    
+    // MARK: - Screen Shake
+    func shakeCamera(intensity: CGFloat = 5, duration: TimeInterval = 0.25) {
+        shakeNode.removeAction(forKey: "shake")
+        let count = 6
+        var actions: [SKAction] = []
+        for i in 0..<count {
+            let fade     = 1.0 - CGFloat(i) / CGFloat(count)
+            let dx       = CGFloat.random(in: -intensity...intensity) * fade
+            let dy       = CGFloat.random(in: -intensity...intensity) * fade
+            let stepTime = duration / Double(count)
+            actions.append(.moveBy(x: dx, y: dy, duration: stepTime))
+        }
+        actions.append(.move(to: .zero, duration: 0))   // volta para zero relativo
+        shakeNode.run(.sequence(actions), withKey: "shake")
     }
     
     /// Toggles pause state and updates HUD accordingly.

@@ -108,6 +108,7 @@ class PlayerSystem {
         }
         
         // Update sprite animation with current time
+        guard !sprite.isFlashing else { return }
         updateSpriteAnimation(sprite: sprite, node: node, currentTime: currentTime, attack: attack)
 
     }
