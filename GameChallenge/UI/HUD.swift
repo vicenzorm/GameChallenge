@@ -235,25 +235,26 @@ class HUD: SKNode {
         let title = SKLabelNode(text: "Pause")
         title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
         title.fontColor = .white;
-        title.position = CGPoint(x: -316.25, y: 83.5)
+        title.position = CGPoint(x: -286.25, y: 83.5)
         title.zPosition = 1
         root.addChild(title)
         
         let title2 = SKLabelNode(text: waveLabel.text)
         title2.fontName = "PressStart2P-Regular"; title2.fontSize = 67
         title2.fontColor = .white;
-        title2.position = CGPoint(x: -140.25, y: 0)
+        title2.position = CGPoint(x: -341.25, y: 0)
         title2.zPosition = 1
+        title2.horizontalAlignmentMode = .left
         root.addChild(title2)
 
         root.addChild(makeOverlayButton(
             text: "Resume",
-            pos: CGPoint(x: -292.25, y: -43.75),
+            pos: CGPoint(x: -262.25, y: -53.75),
             name: "resumeButton"
         ))
         root.addChild(makeOverlayButton(
             text: "Exit",
-            pos: CGPoint(x: -108.25, y: -43.75),
+            pos: CGPoint(x: -78.25, y: -53.75),
             name: "menuFromPause"
         ))
         return root
