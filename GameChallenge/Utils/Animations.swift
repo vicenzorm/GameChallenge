@@ -8,20 +8,14 @@
 import Foundation
 import SpriteKit
 
-func animatePressedButton(button: SKSpriteNode) {
-    let texture = SKTexture(imageNamed: String((button.name ?? "") + "Pressed"))
-    texture.filteringMode = .nearest
-    button.texture = texture
-
-}
 
 func animatePressedToggle(toggle: SKSpriteNode, isOn: Bool) {
     if isOn {
-        let texture = SKTexture(imageNamed: "toggleOn")
+        let texture = SKTexture(imageNamed: "miniButtonBackground")
         texture.filteringMode = .nearest
         toggle.texture = texture
     } else {
-        let texture = SKTexture(imageNamed: "toggleOff")
+        let texture = SKTexture(imageNamed: "miniButtonDeactivated")
         texture.filteringMode = .nearest
         toggle.texture = texture
     }
