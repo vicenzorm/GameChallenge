@@ -47,6 +47,7 @@ class GameScene: SKScene {
     private var enemyProjectileEntities: [Entity] = []
     private var ladderEntity:  Entity?
     private var darknessOverlay: DarknessOverlay!
+    private var vignetteNode: SKSpriteNode?
     
     // Systems
     private let movementSystem   = MovementSystem()
@@ -116,17 +117,21 @@ class GameScene: SKScene {
         }
         setupJoystick()
         setupHUD(view: view)
+        setupVignette()
         setupPlayer()
         collisionSystem.onPlayerHit = { [weak self] playerNode in
             guard let self, let sprite = playerNode as? SKSpriteNode else { return }
 
-            // ── Shake ─────────────────────────────────────────────────────
-            self.shakeCamera()
+            // ── Shake mais intenso ─────────────────────────────────────────
+            self.shakeCamera(intensity: 10, duration: 0.35)
+
+            // ── Vignette vermelha ──────────────────────────────────────────
+            self.flashVignette(color: .red)
 
             // ── Som ───────────────────────────────────────────────────────
             SoundManager.shared.play(SoundManager.shared.playerDamaged, on: playerNode)
 
-            // ── Flash (colorize direto no sprite) ─────────────────────────
+            // ── Flash vermelho no sprite ───────────────────────────────────
             guard let spriteComp = self.playerEntity.get(SpriteComponent.self) else { return }
             spriteComp.isFlashing = true
             sprite.removeAction(forKey: "hitFlash")
@@ -136,6 +141,12 @@ class GameScene: SKScene {
                 .colorize(withColorBlendFactor: 0.0, duration: 0.12),
                 .run { spriteComp.isFlashing = false }
             ]), withKey: "hitFlash")
+        }
+        collisionSystem.onPlayerHealed = { [weak self] in
+            self?.flashVignette(color: .green, intensity: 0.5, duration: 0.5)
+        }
+        collisionSystem.onPlayerSpecialCharged = { [weak self] in
+            self?.flashVignette(color: .cyan, intensity: 0.5, duration: 0.5)
         }
         setupBoxes()
         setupWaveCallbacks()
@@ -150,6 +161,28 @@ class GameScene: SKScene {
     }
     
     // MARK: Setup
+    
+    private func setupVignette() {
+        let vignette = SKSpriteNode(imageNamed: "vignette")  // veja nota abaixo
+        vignette.size      = size
+        vignette.zPosition = 200
+        vignette.alpha     = 0
+        vignette.name      = "vignette"
+        shakeNode.addChild(vignette)
+        vignetteNode = vignette
+    }
+
+    private func flashVignette(color: UIColor, intensity: CGFloat = 0.7, duration: TimeInterval = 0.35) {
+        guard let v = vignetteNode else { return }
+        v.removeAction(forKey: "vignette")
+        v.color           = color
+        v.colorBlendFactor = 1.0
+        v.alpha           = 0
+        v.run(.sequence([
+            .fadeAlpha(to: intensity, duration: 0.05),
+            .fadeAlpha(to: 0,         duration: duration)
+        ]), withKey: "vignette")
+    }
     
     /// Builds the visible world (tiled background + border) and adds it to the scene.
     private func setupWorld() {
@@ -276,6 +309,15 @@ class GameScene: SKScene {
                 guard let self else { return }
                 self.spawnLadder()
             }
+        }
+        
+        waveSystem.onWaveStart = { [weak self] wave in
+            guard let self else { return }
+            self.hud.updateWave(wave)
+            self.hud.updateWaveProgress(0)   // ← reseta a barra na troca de andar
+            self.showWaveBanner(wave: wave)
+            self.reshuffleBoxes()
+            if wave > 1 { self.removeLadderAndArrow() }
         }
     }
     
@@ -447,7 +489,8 @@ class GameScene: SKScene {
         let deadEnemyProj = projectileSystem.updateEnemyProjectiles(
             projectiles: enemyProjectileEntities,
             playerEntity: playerEntity,
-            deltaTime: dt
+            deltaTime: dt,
+            onPlayerHit: collisionSystem.onPlayerHit   // ← adicione essa linha
         )
         for proj in deadEnemyProj {
             proj.get(TransformComponent.self)?.node.removeFromParent()
@@ -500,6 +543,8 @@ class GameScene: SKScene {
             d.get(MovementComponent.self)?.velocity = .zero
             // Trigga animação — nó será removido pelo EnemySystem ao terminar
             enemySystem.triggerDeath(enemy: d)
+            waveSystem.registerEnemyKilled()   // ← conta o inimigo morto
+            hud.updateWaveProgress(waveSystem.waveProgress)   // ← atualiza a barra
             dyingEnemies.append(d)   // ← move para lista de moribundos
         }
         let deadIDs = Set(dead.map { $0.id })
@@ -517,7 +562,7 @@ class GameScene: SKScene {
                 pl.specialReady = true
             }
             hud.updateSpecial(killStreak: pl.killStreak, isReady: pl.specialReady)
-            hud.setButtonBActive(pl.specialReady)
+            //hud.setButtonBActive(pl.specialReady)
         }
         
         

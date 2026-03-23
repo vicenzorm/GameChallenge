@@ -61,7 +61,8 @@ class ProjectileSystem {
     func updateEnemyProjectiles(
         projectiles: [Entity],
         playerEntity: Entity,
-        deltaTime: TimeInterval
+        deltaTime: TimeInterval,
+        onPlayerHit: ((SKNode) -> Void)? = nil   // ← adicione esse parâmetro
     ) -> [Entity] {
         var toRemove = [Entity]()
 
@@ -76,24 +77,26 @@ class ProjectileSystem {
                 let pComp     = proj.get(ProjectileComponent.self)
             else { continue }
 
-            // Move
             transform.node.position.x += pComp.direction.dx * pComp.speed * deltaTime
             transform.node.position.y += pComp.direction.dy * pComp.speed * deltaTime
 
-            // Expira
             pComp.lifetime -= deltaTime
             if pComp.lifetime <= 0 {
                 toRemove.append(proj)
                 continue
             }
 
-            // Colisão com player
             let dist = hypot(
                 transform.node.position.x - playerTransform.node.position.x,
                 transform.node.position.y - playerTransform.node.position.y
             )
             if dist <= 28 {
+                guard !playerHealth.isInvulnerable else {
+                    toRemove.append(proj)
+                    continue
+                }
                 playerHealth.current = Swift.max(0, playerHealth.current - pComp.damage)
+                onPlayerHit?(playerTransform.node)   // ← dispara o feedback
                 toRemove.append(proj)
             }
         }

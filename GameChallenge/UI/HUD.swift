@@ -35,110 +35,173 @@ class HUD: SKNode {
     
     private var continueLabel: SKLabelNode?
     private var continueButtonNode: SKShapeNode?
+    
+    private let waveProgressBg:   SKSpriteNode
+    private let waveProgressFill: SKCropNode
+    private let waveProgressMask: SKSpriteNode
+
+    private let specialRingCrop: SKCropNode
+    private let specialRingMask: SKSpriteNode
 
     init(screenSize: CGSize) {
         self.screenSize = screenSize
         let hw = screenSize.width  / 2
         let hh = screenSize.height / 2
 
-        //Character Image
-        
+        // ── Character Image ────────────────────────────────────────
         let charImg = SKSpriteNode(imageNamed: "characterImage")
         charImg.zPosition = 100
-        charImg.position = CGPoint(x: -hw + 60, y: hh - 50)
-        charImg.size = CGSize(width: 65, height: 65)
-        
-        
-        
-        // ── Health bar (top-left) ──────────────────────────────
-        let barBg = SKSpriteNode(imageNamed: "healthBarBackground")
-        barBg.size = CGSize(width: 156, height: 22.7)
-        barBg.position    = CGPoint(x: -hw + 160, y: hh - 35)
-        barBg.zPosition   = 99
+        charImg.position  = CGPoint(x: -hw + 60, y: hh - 50)
+        charImg.size      = CGSize(width: 65, height: 65)
 
-        
+        // ── Health bar (top-left) ──────────────────────────────────
+        let barBg = SKSpriteNode(imageNamed: "healthBarBackground")
+        barBg.size      = CGSize(width: 156, height: 22.7)
+        barBg.position  = CGPoint(x: -hw + 160, y: hh - 35)
+        barBg.zPosition = 99
+
         healthSprite.size = CGSize(width: 156, height: 22.7)
-        
         let hMask = SKSpriteNode(color: .white, size: healthSprite.size)
         hMask.anchorPoint = CGPoint(x: 0, y: 0.5)
         hMask.position.x  = -healthSprite.size.width / 2
         let hCrop = SKCropNode()
         hCrop.addChild(healthSprite)
-        hCrop.maskNode = hMask
-        hCrop.position = CGPoint(x: -hw + 160, y: hh - 35)
+        hCrop.maskNode  = hMask
+        hCrop.position  = CGPoint(x: -hw + 160, y: hh - 35)
         hCrop.zPosition = 100
-        
         healthCrop = hCrop
         healthMask = hMask
-        
-        
-        // Special Bar
+
+        // ── Special bar (top-left, abaixo da health) ───────────────
         let specialBarBg = SKSpriteNode(imageNamed: "specialBarBackground")
-        specialBarBg.size = CGSize(width: 121.3, height: 13.5)
-        specialBarBg.position    = CGPoint(x: -hw + 150, y: hh - 58)
-        specialBarBg.zPosition   = 99
-        
+        specialBarBg.size      = CGSize(width: 121.3, height: 13.5)
+        specialBarBg.position  = CGPoint(x: -hw + 150, y: hh - 58)
+        specialBarBg.zPosition = 99
+
         let specialSprite = SKSpriteNode(imageNamed: "specialBarFull")
         specialSprite.size = CGSize(width: 121.3, height: 13.5)
-        
         let sMask = SKSpriteNode(color: .white, size: specialSprite.size)
         sMask.anchorPoint = CGPoint(x: 0, y: 0.5)
-        sMask.position.x = -specialSprite.size.width / 2
+        sMask.position.x  = -specialSprite.size.width / 2
         let sCrop = SKCropNode()
         sCrop.addChild(specialSprite)
-        sCrop.maskNode = sMask
-        sCrop.position = CGPoint(x: -hw + 148, y: hh - 58)
+        sCrop.maskNode  = sMask
+        sCrop.position  = CGPoint(x: -hw + 148, y: hh - 58)
         sCrop.zPosition = 100
-        
         specialCrop = sCrop
         specialMask = sMask
-        
 
-        // ── Wave label (top-centre) ────────────────────────────
-        waveLabel = SKLabelNode(text: "Floor 1")
+        // ── Wave label (top-centre) ────────────────────────────────
+        waveLabel          = SKLabelNode(text: "Floor 1")
         waveLabel.fontName = AppManager.shared.secondaryFont
         waveLabel.fontSize = 16
         waveLabel.fontColor = .white
         waveLabel.horizontalAlignmentMode = .center
-        waveLabel.position = CGPoint(x: 0, y: hh - 24); waveLabel.zPosition = 100
+        waveLabel.position  = CGPoint(x: 0, y: hh - 24)
+        waveLabel.zPosition = 100
 
-        // Countdown (shown between waves, same position)
-        countdownLabel = SKLabelNode(text: "")
-        countdownLabel.fontName = AppManager.shared.secondaryFont; countdownLabel.fontSize = 13
+        // ── Wave progress bar (abaixo do waveLabel) ────────────────
+        let progBarW: CGFloat = 130
+        let progBarH: CGFloat = 8
+
+        // Fundo usando o asset healthBarBackground como máscara visual
+        let progBg = SKSpriteNode(imageNamed: "healthBarBackground")
+        progBg.size      = CGSize(width: progBarW, height: progBarH)
+        progBg.position  = CGPoint(x: 0, y: hh - 38)
+        progBg.zPosition = 100
+
+        // Sprite de preenchimento — usa waveBarFull quando cheia, cor amarela enquanto carrega
+        let progSprite = SKSpriteNode(imageNamed: "waveBarFull")
+        progSprite.size = CGSize(width: progBarW, height: progBarH)
+
+        let progMask = SKSpriteNode(color: .white, size: CGSize(width: progBarW, height: progBarH))
+        progMask.anchorPoint = CGPoint(x: 0, y: 0.5)
+        progMask.position.x  = -progBarW / 2
+
+        let progCrop = SKCropNode()
+        progCrop.addChild(progSprite)
+        progCrop.maskNode  = progMask
+        progCrop.position  = CGPoint(x: 0, y: hh - 38)
+        progCrop.zPosition = 101
+
+        waveProgressBg   = progBg        // agora é SKSpriteNode — ajuste a declaração (veja abaixo)
+        waveProgressFill = progCrop
+        waveProgressMask = progMask
+
+        // ── Countdown label ────────────────────────────────────────
+        countdownLabel          = SKLabelNode(text: "")
+        countdownLabel.fontName = AppManager.shared.secondaryFont
+        countdownLabel.fontSize = 13
         countdownLabel.fontColor = UIColor(white: 0.7, alpha: 1)
         countdownLabel.horizontalAlignmentMode = .center
-        countdownLabel.position = CGPoint(x: 0, y: hh - 42); countdownLabel.zPosition = 100
+        countdownLabel.position  = CGPoint(x: 0, y: hh - 52)   // empurrado pra baixo da barra
+        countdownLabel.zPosition = 100
 
+        // ── Pause button (top-right) ───────────────────────────────
+        pauseButton          = SKSpriteNode(imageNamed: "pauseButton")
+        pauseButton.size     = CGSize(width: 45, height: 42)
+        pauseButton.position = CGPoint(x: hw - 60, y: hh - 48)
+        pauseButton.zPosition = 100
+        pauseButton.name     = "pauseButton"
 
-        // ── Pause button (top-centre-right) ───────────────────
-        pauseButton = SKSpriteNode(imageNamed: "pauseButton")
-        pauseButton.size = CGSize(width: 45, height: 42)
-        pauseButton.position = CGPoint(x: hw - 60, y: hh - 48); pauseButton.zPosition = 100
-        pauseButton.name = "pauseButton"
-        
+        // ── Button A — attack (bottom-right) ──────────────────────
+        buttonA          = SKSpriteNode(imageNamed: "attack_button")
+        buttonA.size     = CGSize(width: 80, height: 80)
+        buttonA.position = CGPoint(x: hw - 154, y: -hh + 152)
+        buttonA.zPosition = 100
+        buttonA.name     = "buttonA"
 
-        // ── Button A — attack (bottom-right) ──────────────────
-        buttonA = SKSpriteNode(imageNamed: "attack_button")
-        buttonA.size = CGSize(width: 80, height: 80)
-        buttonA.position = CGPoint(x: hw - 154, y: -hh + 152); buttonA.zPosition = 100
-        buttonA.name = "buttonA"
+        // ── Button B — special (bottom-right) ─────────────────────
+        buttonB          = SKSpriteNode(imageNamed: "special_button_off")
+        buttonB.size     = CGSize(width: 88, height: 88)
+        buttonB.position = CGPoint(x: hw - 200, y: -hh + 80)
+        buttonB.zPosition = 100
+        buttonB.alpha    = 0.5   // começa desabilitado
+        buttonB.name     = "buttonB"
 
-        // ── Button B — special (bottom-right) ─────────────────
-        buttonB = SKSpriteNode(imageNamed: "special_button_off")
-        buttonB.size = CGSize(width: 88, height: 88)
-        buttonB.position = CGPoint(x: hw - 200, y: -hh + 80); buttonB.zPosition = 100
-        buttonB.name = "buttonB"
+        // ── Anel de carga do especial (atrás do botão B) ───────────
+        let ringRadius: CGFloat = 32   // mesmo raio do botão (88/2)
 
+        // Círculo preenchido azul — será revelado de baixo pra cima pela máscara
+        let ringShape = SKShapeNode(circleOfRadius: ringRadius)
+        ringShape.fillColor   = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.6)
+        ringShape.strokeColor = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.9)
+        //ringShape.lineWidth   = 2
+
+        // Converte o shape para textura para poder usar dentro do SKCropNode
+        let ringTexture = SKView().texture(from: ringShape, crop: CGRect(
+            x: -ringRadius, y: -ringRadius,
+            width: ringRadius * 2, height: ringRadius * 2
+        ))!
+        let ringSprite = SKSpriteNode(texture: ringTexture)
+        ringSprite.size = CGSize(width: ringRadius * 2, height: ringRadius * 2)
+
+        // Máscara cresce de baixo pra cima
+        let ringMask = SKSpriteNode(color: .white,
+                                     size: CGSize(width: ringRadius * 2, height: 0))
+        ringMask.anchorPoint = CGPoint(x: 0.5, y: 0)
+        ringMask.position    = CGPoint(x: 0, y: -ringRadius)
+
+        let ringCrop = SKCropNode()
+        ringCrop.addChild(ringSprite)
+        ringCrop.maskNode  = ringMask
+        ringCrop.position  = CGPoint(x: hw - 200 + 8, y: -hh + 80 - 8)  // ← deslocado para baixo-direita
+        ringCrop.zPosition = -100
+        specialRingCrop = ringCrop
+        specialRingMask = ringMask
+
+        // ── super.init ─────────────────────────────────────────────
         super.init()
         zPosition = 99
 
         addChild(charImg)
-        addChild(barBg); addChild(healthCrop)
-        addChild(specialBarBg)
-        addChild(specialCrop)
-        addChild(waveLabel); addChild(countdownLabel)
+        addChild(barBg);         addChild(healthCrop)
+        addChild(specialBarBg);  addChild(specialCrop)
+        addChild(waveLabel);     addChild(countdownLabel)
+        addChild(waveProgressBg); addChild(waveProgressFill)   // barra de progresso
         addChild(pauseButton)
-        addChild(buttonA); addChild(buttonB)
+        addChild(specialRingCrop)   // anel ANTES do botão B para ficar atrás
+        addChild(buttonA);       addChild(buttonB)
     }
 
     required init?(coder aDecoder: NSCoder) { fatalError() }
@@ -155,6 +218,62 @@ class HUD: SKNode {
         else                { healthSprite.color = .red }
     }
 
+    // Barra de progresso da wave — chame do GameScene a cada inimigo morto
+    // ratio: 0.0 (wave começou) → 1.0 (todos mortos)
+    func updateWaveProgress(_ ratio: CGFloat) {
+        let clamped = Swift.max(0, Swift.min(1, ratio))
+        waveProgressMask.xScale = clamped
+
+        // Quando completa, mostra o asset waveBarFull; senão, cor amarela
+        if let fill = waveProgressFill.children.first as? SKSpriteNode {
+            if clamped >= 1.0 {
+                fill.texture          = SKTexture(imageNamed: "waveBarFull")
+                fill.color            = .clear
+                fill.colorBlendFactor = 0
+            } else {
+                fill.texture          = SKTexture(imageNamed: "waveBarFull")
+                fill.color            = UIColor(red: 1.0, green: 0.85, blue: 0.0, alpha: 1)
+                fill.colorBlendFactor = 1.0   // ← tinge de amarelo enquanto não está cheia
+            }
+        }
+    }
+
+    // Sobrescreva updateSpecial para também atualizar o anel:
+    func updateSpecial(killStreak: Int, isReady: Bool) {
+        let ratio = CGFloat(Swift.min(killStreak, PlayerComponent.weakKillsNeeded))
+                  / CGFloat(PlayerComponent.weakKillsNeeded)
+        specialMask.xScale = Swift.max(0, Swift.min(1, ratio))
+
+        // Anel cresce de baixo pra cima
+        let ringH = specialRingMask.size.width * Swift.max(0, Swift.min(1, ratio))
+        specialRingMask.size = CGSize(width: specialRingMask.size.width, height: ringH)
+
+        // Textura e opacidade do botão B — tudo aqui, nunca em outro lugar
+        buttonB.texture = SKTexture(imageNamed: isReady ? "special_button_on" : "special_button_off")
+        buttonB.alpha   = isReady ? 1.0 : 0.5
+
+        if isReady {
+            specialRingMask.size = CGSize(width: specialRingMask.size.width,
+                                          height: specialRingMask.size.width)
+            if specialRingCrop.action(forKey: "pulse") == nil {
+                specialRingCrop.run(.repeatForever(.sequence([
+                    .fadeAlpha(to: 0.3, duration: 0.35),
+                    .fadeAlpha(to: 0.9, duration: 0.35)
+                ])), withKey: "pulse")
+            }
+            if specialCrop.action(forKey: "pulse") == nil {
+                specialCrop.run(.repeatForever(.sequence([
+                    .fadeAlpha(to: 0.55, duration: 0.35),
+                    .fadeAlpha(to: 1.0,  duration: 0.35)
+                ])), withKey: "pulse")
+            }
+        } else {
+            specialRingCrop.removeAction(forKey: "pulse")
+            specialRingCrop.alpha = 1.0
+            specialCrop.removeAction(forKey: "pulse")
+            specialCrop.alpha = 1.0
+        }
+    }
 
     func updateWave(_ wave: Int) {
         waveLabel.text = "Floor \(wave)"
@@ -168,28 +287,6 @@ class HUD: SKNode {
         } else {
             countdownLabel.text = ""
         }
-    }
-
-    func updateSpecial(killStreak: Int, isReady: Bool) {
-        let ratio = CGFloat(Swift.min(killStreak, PlayerComponent.weakKillsNeeded))
-                  / CGFloat(PlayerComponent.weakKillsNeeded)
-        specialMask.xScale = Swift.max(0, Swift.min(1, ratio))
-
-        if isReady {
-            if specialCrop.action(forKey: "pulse") == nil {
-                specialCrop.run(.repeatForever(.sequence([
-                    .fadeAlpha(to: 0.55, duration: 0.35),
-                    .fadeAlpha(to: 1.0,  duration: 0.35)
-                ])), withKey: "pulse")
-            }
-        } else {
-            specialCrop.removeAction(forKey: "pulse");
-            specialCrop.alpha = 1
-        }
-    }
-
-    func setButtonBActive(_ active: Bool) {
-        buttonB.texture = SKTexture(imageNamed: active ? "special_button_on" : "special_button_off")
     }
 
     func flashButtonA() {
