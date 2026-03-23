@@ -68,7 +68,6 @@ class GameScene: SKScene {
     private var hud:        HUD!
     private var cameraNode: SKCameraNode!
     private var movementJoystick: FloatingJoystick!
-    private var attackJoystick:   Joystick!
     
     // Cutscene (retido aqui para não ser desalocado durante o vídeo)
     private var cutscenePlayer: CutscenePlayer?
@@ -121,16 +120,16 @@ class GameScene: SKScene {
         setupPlayer()
         collisionSystem.onPlayerHit = { [weak self] playerNode in
             guard let self, let sprite = playerNode as? SKSpriteNode else { return }
-
+            
             // ── Shake intenso ─────────────────────────────────────────
             self.shakeCamera(intensity: 10, duration: 0.35)
-
+            
             // ── Vignette vermelha ──────────────────────────────────────
             self.flashVignette(color: .red)
-
+            
             // ── Som ───────────────────────────────────────────────────
             SoundManager.shared.play(SoundManager.shared.playerDamaged, on: playerNode)
-
+            
             // ── Flash vermelho no sprite ───────────────────────────────
             guard let spriteComp = self.playerEntity.get(SpriteComponent.self) else { return }
             spriteComp.isFlashing = true
@@ -157,7 +156,6 @@ class GameScene: SKScene {
     
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
-        layoutJoystick()
     }
     
     // MARK: Setup
@@ -171,7 +169,7 @@ class GameScene: SKScene {
         shakeNode.addChild(vignette)
         vignetteNode = vignette
     }
-
+    
     private func flashVignette(color: UIColor, intensity: CGFloat = 0.7, duration: TimeInterval = 0.35) {
         guard let v = vignetteNode else { return }
         v.removeAction(forKey: "vignette")
@@ -242,12 +240,6 @@ class GameScene: SKScene {
     private func setupJoystick() {
         movementJoystick = FloatingJoystick(baseAsset: "joystick_base", stickAsset: "joystick_ball")
         shakeNode.addChild(movementJoystick)
-        
-        attackJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_shuriken")
-        shakeNode.addChild(attackJoystick)
-        attackJoystick.isUserInteractionEnabled = true
-        
-        layoutJoystick()
     }
     
     private func setupDarkness() {
@@ -258,17 +250,7 @@ class GameScene: SKScene {
     
     /// Positions the joystick in the bottom-left of the camera's visible area.
     /// Safe to call multiple times (e.g., on rotation/resize). No-ops if scene/joystick not ready.
-    private func layoutJoystick() {
-        guard let attackJoystick = attackJoystick,
-              let scene = self.scene ?? self as SKScene? else { return }
-        
-        let margin: CGFloat = 80
-        // Scene size represents the camera's visible rect when camera is centered and scaleMode applied
-        let width  = scene.size.width
-        let height = scene.size.height
-        // Convert to camera's local coordinate space: camera's origin is its center
-        attackJoystick.position = CGPoint(x: width/2 - margin, y: -height/2 + margin)
-    }
+    
     
     /// Creates and adds the HUD to the camera node.
     private func setupHUD(view: SKView) {
@@ -287,7 +269,7 @@ class GameScene: SKScene {
             guard let self else { return }
             self.enemyEntities.append(EntityFactory.makeEnemy(type: type, at: pos, scene: self))
         }
-
+        
         waveSystem.onWaveStart = { [weak self] wave in
             guard let self else { return }
             self.hud.updateWave(wave)
@@ -296,7 +278,7 @@ class GameScene: SKScene {
             self.reshuffleBoxes()
             if wave > 1 { self.removeLadderAndArrow() }
         }
-
+        
         waveSystem.onWaveEnd = { [weak self] completedWave in
             guard let self else { return }
             self.run(.wait(forDuration: 1.5)) { [weak self] in
@@ -364,11 +346,9 @@ class GameScene: SKScene {
         
         // 1. Get joystick input
         let movementVelocity = movementJoystick.velocity
-        let attackVelocity = attackJoystick.velocity
         
         inputSystem.update(playerEntity: playerEntity,
-                           movementDirection: movementVelocity,
-                           attackDirection: attackVelocity)
+                           movementDirection: movementVelocity)
         
         // 2. Player
         playerSystem.update(
@@ -410,8 +390,6 @@ class GameScene: SKScene {
         
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
-            
-            // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
                 let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
@@ -424,6 +402,7 @@ class GameScene: SKScene {
                 if !isSpecialNow { hud.flashButtonA() }
             }
             
+            // Ataque Especial (Botão B)
             if inputSystem.specialPressed && pl.specialReady {
                 inputSystem.specialPressed = false
                 
@@ -438,21 +417,45 @@ class GameScene: SKScene {
                 pl.killStreak = 0
                 pl.specialReady = false
                 hud.updateSpecial(killStreak: 0, isReady: false)
-            }
-            
-            // Tiro (Joystick direito)
+            }            // Tiro Teleguiado (Botão C)
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
-                let now = Date.timeIntervalSinceReferenceDate  // ou passe `currentTime` do update
                 if currentTime - attack.lastShotTime >= attack.shootCooldown {
-                    attack.lastShotTime = currentTime
-                    if let pos = playerEntity.get(TransformComponent.self)?.node.position {
-                        let projectile = EntityFactory.makeProjectile(
-                            at: pos,
-                            direction: attack.shootDirection,
-                            scene: self
-                        )
-                        projectileEntities.append(projectile)
+                    
+                    var nearestEnemy: Entity? = nil
+                    var minDistance: CGFloat = .infinity
+                    
+                    if let playerNode = playerEntity.get(TransformComponent.self)?.node {
+                        // Acha o inimigo mais próximo
+                        for enemy in enemyEntities {
+                            if let enemyNode = enemy.get(TransformComponent.self)?.node,
+                               let health = enemy.get(HealthComponent.self), health.isAlive {
+                                let dist = playerNode.position.distance(to: enemyNode.position)
+                                if dist < minDistance {
+                                    minDistance = dist
+                                    nearestEnemy = enemy
+                                }
+                            }
+                        }
+                        
+                        // Só atira se houver um inimigo próximo na tela (evita atirar no vazio)
+                        if let target = nearestEnemy, let targetNode = target.get(TransformComponent.self)?.node {
+                            attack.lastShotTime = currentTime
+                            
+                            // Calcula direção inicial
+                            let dx = targetNode.position.x - playerNode.position.x
+                            let dy = targetNode.position.y - playerNode.position.y
+                            let dist = hypot(dx, dy)
+                            let initialDir = dist > 0 ? CGVector(dx: dx/dist, dy: dy/dist) : CGVector(dx: 1, dy: 0)
+                            
+                            let projectile = EntityFactory.makeProjectile(
+                                at: playerNode.position,
+                                direction: initialDir,
+                                scene: self,
+                                target: target // Passa o alvo!
+                            )
+                            projectileEntities.append(projectile)
+                        }
                     }
                 }
             }
@@ -622,16 +625,12 @@ class GameScene: SKScene {
         movementJoystick.isHidden = isPausedByPlayer
         movementJoystick.isUserInteractionEnabled = !isPausedByPlayer
         
-        attackJoystick.isHidden = isPausedByPlayer
-        attackJoystick.isUserInteractionEnabled = !isPausedByPlayer
-        
         hud.showPauseOverlay(isPausedByPlayer)
     }
     
     private func advanceFloor() {
         // Esconde joysticks durante a cutscene
         movementJoystick.isHidden = true
-        attackJoystick.isHidden   = true
         isPausedByPlayer           = true
         
         removeLadderAndArrow()
@@ -651,7 +650,6 @@ class GameScene: SKScene {
             self.cutscenePlayer          = nil
             self.isPausedByPlayer        = false
             self.movementJoystick.isHidden = false
-            self.attackJoystick.isHidden   = false
             self.waveSystem.startNextWave(sceneSize: self.worldSize)
         }
     }
@@ -712,8 +710,6 @@ class GameScene: SKScene {
         GameCenterManager.shared.submitScore(floor: (currentFloor))
         movementJoystick.isHidden = true
         movementJoystick.isUserInteractionEnabled = false
-        attackJoystick.isHidden = true
-        attackJoystick.isUserInteractionEnabled = false
         hud.showGameOver()
     }
     
@@ -825,8 +821,6 @@ class GameScene: SKScene {
             
             self.movementJoystick.isHidden = false
             self.movementJoystick.isUserInteractionEnabled = true
-            self.attackJoystick.isHidden = false
-            self.attackJoystick.isUserInteractionEnabled = true
         }
     }
     
@@ -857,6 +851,12 @@ class GameScene: SKScene {
                             button.alpha = 0.7
                         }
                         hitUI = true
+                        
+                    case "buttonC":
+                        inputSystem.shootPressed = true
+                        if let button = node as? SKSpriteNode { button.alpha = 0.7 }
+                        hitUI = true
+                        
                     case "leaderboardButton":
                         GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
                         hitUI = true
@@ -898,8 +898,7 @@ class GameScene: SKScene {
             let hitNodes = cameraNode.nodes(at: loc)
             
             for node in hitNodes {
-                if node.name == "buttonA" || node.name == "buttonB" {
-                    // Reset button appearance
+                if node.name == "buttonA" || node.name == "buttonB" || node.name == "buttonC" {
                     if let button = node as? SKSpriteNode {
                         button.alpha = 1.0
                     }
@@ -914,10 +913,11 @@ class GameScene: SKScene {
         // Reset button states if touches are cancelled
         inputSystem.attackPressed = false
         inputSystem.specialPressed = false
+        inputSystem.shootPressed = false
         
         // Reset button appearances
         if let cameraNode = cameraNode {
-            let buttons = cameraNode.children.filter { $0.name == "buttonA" || $0.name == "buttonB" }
+            let buttons = cameraNode.children.filter { $0.name == "buttonA" || $0.name == "buttonB" || $0.name == "buttonC" }
             for button in buttons {
                 (button as? SKSpriteNode)?.alpha = 1.0
             }
@@ -933,11 +933,10 @@ class GameScene: SKScene {
         let nextScene: SKScene
         if nodeName == "menuFromGameOver" || nodeName == "menuFromPause" {
             nextScene = MenuScene(size: size)
-        } else { // restartButton
+        } else {
             nextScene = GameScene(size: size)
         }
         
-        //        nextScene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         nextScene.scaleMode = self.scaleMode
         view.presentScene(nextScene, transition: .fade(withDuration: 0.4))
     }

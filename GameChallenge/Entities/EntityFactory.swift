@@ -368,28 +368,23 @@ class EntityFactory {
     // MARK: Ladder
     static func makeLadder(at position: CGPoint, scene: SKScene) -> Entity {
         let entity = Entity()
-
+        
         let node = SKSpriteNode(imageNamed: "ladder_sprite")
         node.size      = CGSize(width: 124, height: 124)   // ← ajuste ao tamanho do asset
         node.position  = position
         node.zPosition = 6
         node.alpha     = 0
-
+        
         scene.addChild(node)
-
+        
         node.run(.fadeIn(withDuration: 0.5))
-
-//        node.run(.repeatForever(.sequence([
-//            .moveBy(x: 0, y: 6, duration: 0.6),
-//            .moveBy(x: 0, y: -6, duration: 0.6)
-//        ])))
-
+        
         entity.add(TransformComponent(node: node))
         entity.add(LadderComponent())
-
+        
         return entity
     }
-
+    
     // MARK: Arrow (indicador de direção)
     static func makeArrow(attachedTo cameraNode: SKCameraNode) -> SKSpriteNode {
         let node = SKSpriteNode(imageNamed: "arrow_sprite")
@@ -401,7 +396,7 @@ class EntityFactory {
             .scale(to: 1.2, duration: 0.4),
             .scale(to: 1.0, duration: 0.4)
         ])))
-
+        
         // Filha do cameraNode — sempre visível na tela
         cameraNode.addChild(node)
         return node
@@ -478,6 +473,7 @@ class EntityFactory {
         
         return entity
     }
+    
     // MARK: - Helper Methods
     
     /// Loads a sequence of textures with a base name and count
@@ -575,7 +571,7 @@ class EntityFactory {
     }
     
     // MARK: Projectile (player) — knife animation
-    static func makeProjectile(at position: CGPoint, direction: CGVector, scene: SKScene) -> Entity {
+    static func makeProjectile(at position: CGPoint, direction: CGVector, scene: SKScene, target: Entity? = nil) -> Entity {
         let entity = Entity()
         
         let textures = loadTextures(baseName: "Shuriken_2_", count: 30)
@@ -585,7 +581,6 @@ class EntityFactory {
         node.position  = position
         node.zPosition = 9
         
-        // Rotaciona o sprite na direção do tiro
         node.zRotation = atan2(direction.dy, direction.dx) - (.pi / 2)
         
         scene.addChild(node)
@@ -595,7 +590,7 @@ class EntityFactory {
         node.run(.repeatForever(animate))
         
         entity.add(TransformComponent(node: node))
-        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 600))
+        entity.add(ProjectileComponent(damage: 12, direction: direction, speed: 600, target: target ?? Entity()))
         //  ligeiramente abaixo do melee — tiro é mais seguro, então faz menos dano
         
         SoundManager.shared.play(SoundManager.shared.attack2, on: node)
@@ -625,7 +620,7 @@ class EntityFactory {
         node.run(.repeatForever(animate))
         
         entity.add(TransformComponent(node: node))
-        entity.add(ProjectileComponent(damage: 10, direction: direction, speed: 380))
+        entity.add(ProjectileComponent(damage: 10, direction: direction, speed: 380, target: Entity()))
         //  era 12, desce pra 10 — fireball é mais lenta, justo ser um pouco mais fraca
         
         return entity
@@ -649,5 +644,4 @@ func makeSpinAttackAction(spriteComponent: SpriteComponent) -> SKAction {
     // Podemos repetir o giro 2 vezes para ficar mais impactante
     return SKAction.repeat(animateSpin, count: 2)
 }
-
 
