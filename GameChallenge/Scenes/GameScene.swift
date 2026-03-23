@@ -147,6 +147,34 @@ class GameScene: SKScene {
         collisionSystem.onPlayerSpecialCharged = { [weak self] in
             self?.flashVignette(color: .cyan, intensity: 0.5, duration: 0.5)
         }
+        collisionSystem.onKillAllUsed = { [weak self] in
+            guard let self else { return }
+
+            // ── Shake de explosão ─────────────────────────────────────
+            self.shakeCamera(intensity: 18, duration: 0.5)
+
+            // ── Flash branco usando chave diferente do vignette ────────
+            guard let v = self.vignetteNode else { return }
+            v.removeAction(forKey: "killFlash")
+            v.removeAction(forKey: "vignette")
+            v.alpha             = 0
+            v.color             = .white
+            v.colorBlendFactor  = 1.0
+            v.run(.sequence([
+                .fadeAlpha(to: 1.0, duration: 0.04),
+                .fadeAlpha(to: 0.0, duration: 0.15),
+                .fadeAlpha(to: 0.7, duration: 0.03),
+                .fadeAlpha(to: 0.0, duration: 0.2),
+                // Após o flash branco, dispara o vignette roxo
+                .run { [weak self] in
+                    self?.flashVignette(
+                        color: UIColor(red: 0.6, green: 0.1, blue: 0.9, alpha: 1),
+                        intensity: 0.8,
+                        duration: 0.8
+                    )
+                }
+            ]), withKey: "killFlash")
+        }
         setupBoxes()
         setupWaveCallbacks()
         setupCoinCallbacks()
@@ -771,15 +799,16 @@ class GameScene: SKScene {
     
     // Made internal so systems (e.g., CollisionSystem) can trigger it.
     func clearEnemiesAroundPlayer() {
-        
         for enemy in enemyEntities {
-            enemy.get(TransformComponent.self)?.node.run(.sequence([
-                .scale(to: 0.1, duration: 0.15),
-                .removeFromParent()
-            ]))
+            // Conta o kill para a barra de progresso
+            waveSystem.registerEnemyKilled()
+            // Trigga animação de morte em vez de remover direto
+            enemy.get(MovementComponent.self)?.velocity = .zero
+            enemySystem.triggerDeath(enemy: enemy)
+            dyingEnemies.append(enemy)
         }
-        
         enemyEntities.removeAll()
+        hud.updateWaveProgress(waveSystem.waveProgress)
     }
     
     private func handleContinue(view: SKView) {

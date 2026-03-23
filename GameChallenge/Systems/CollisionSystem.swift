@@ -13,6 +13,7 @@ class CollisionSystem {
     var onPlayerHit: ((SKNode) -> Void)?
     var onPlayerHealed: (() -> Void)?
     var onPlayerSpecialCharged: (() -> Void)?
+    var onKillAllUsed: (() -> Void)?
 
     // Cooldown para evitar que shake e flash disparem todo frame durante colisão contínua
     private var hitFeedbackCooldown: TimeInterval = 0
@@ -106,6 +107,7 @@ class CollisionSystem {
             }
         case .killAll:
             scene.clearEnemiesAroundPlayer()
+            onKillAllUsed?()   
         }
 
         item.get(TransformComponent.self)?.node.removeFromParent()

@@ -143,7 +143,7 @@ class EntityFactory {
         
         entity.add(TransformComponent(node: node))
         entity.add(HealthComponent(max: 100))
-        entity.add(MovementComponent(speed: 220))
+        entity.add(MovementComponent(speed: 240))
         entity.add(PlayerComponent())
         entity.add(InputComponent())
         entity.add(AttackComponent(damage: 24, range: 110, cooldown: 0.4))
