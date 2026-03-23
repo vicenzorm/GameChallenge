@@ -67,7 +67,7 @@ class GameScene: SKScene {
     // MARK: UI
     private var hud:        HUD!
     private var cameraNode: SKCameraNode!
-    private var movementJoystick: Joystick!
+    private var movementJoystick: FloatingJoystick!
     private var attackJoystick:   Joystick!
     
     // Cutscene (retido aqui para não ser desalocado durante o vídeo)
@@ -122,16 +122,16 @@ class GameScene: SKScene {
         collisionSystem.onPlayerHit = { [weak self] playerNode in
             guard let self, let sprite = playerNode as? SKSpriteNode else { return }
 
-            // ── Shake mais intenso ─────────────────────────────────────────
+            // ── Shake intenso ─────────────────────────────────────────
             self.shakeCamera(intensity: 10, duration: 0.35)
 
-            // ── Vignette vermelha ──────────────────────────────────────────
+            // ── Vignette vermelha ──────────────────────────────────────
             self.flashVignette(color: .red)
 
-            // ── Som ───────────────────────────────────────────────────────
+            // ── Som ───────────────────────────────────────────────────
             SoundManager.shared.play(SoundManager.shared.playerDamaged, on: playerNode)
 
-            // ── Flash vermelho no sprite ───────────────────────────────────
+            // ── Flash vermelho no sprite ───────────────────────────────
             guard let spriteComp = self.playerEntity.get(SpriteComponent.self) else { return }
             spriteComp.isFlashing = true
             sprite.removeAction(forKey: "hitFlash")
@@ -240,14 +240,13 @@ class GameScene: SKScene {
     
     /// Initializes the joystick, adds it to the camera, and makes it visible and interactive.
     private func setupJoystick() {
-        movementJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_ball")
-        shakeNode.addChild(movementJoystick)   // era cameraNode
-        movementJoystick.isUserInteractionEnabled = true
-
+        movementJoystick = FloatingJoystick(baseAsset: "joystick_base", stickAsset: "joystick_ball")
+        shakeNode.addChild(movementJoystick)
+        
         attackJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_shuriken")
-        shakeNode.addChild(attackJoystick)     // era cameraNode
+        shakeNode.addChild(attackJoystick)
         attackJoystick.isUserInteractionEnabled = true
-
+        
         layoutJoystick()
     }
     
@@ -260,15 +259,14 @@ class GameScene: SKScene {
     /// Positions the joystick in the bottom-left of the camera's visible area.
     /// Safe to call multiple times (e.g., on rotation/resize). No-ops if scene/joystick not ready.
     private func layoutJoystick() {
-        guard let movementJoystick = movementJoystick,
-              let attackJoystick = attackJoystick,
+        guard let attackJoystick = attackJoystick,
               let scene = self.scene ?? self as SKScene? else { return }
+        
         let margin: CGFloat = 80
         // Scene size represents the camera's visible rect when camera is centered and scaleMode applied
         let width  = scene.size.width
         let height = scene.size.height
         // Convert to camera's local coordinate space: camera's origin is its center
-        movementJoystick.position = CGPoint(x: -width/2 + margin, y: -height/2 + margin)
         attackJoystick.position = CGPoint(x: width/2 - margin, y: -height/2 + margin)
     }
     
@@ -289,35 +287,22 @@ class GameScene: SKScene {
             guard let self else { return }
             self.enemyEntities.append(EntityFactory.makeEnemy(type: type, at: pos, scene: self))
         }
-        
+
         waveSystem.onWaveStart = { [weak self] wave in
             guard let self else { return }
             self.hud.updateWave(wave)
+            self.hud.updateWaveProgress(0)
             self.showWaveBanner(wave: wave)
             self.reshuffleBoxes()
-            
-            if wave > 1 {
-                self.removeLadderAndArrow()
-            }
+            if wave > 1 { self.removeLadderAndArrow() }
         }
-        
+
         waveSystem.onWaveEnd = { [weak self] completedWave in
             guard let self else { return }
-            
-            // Delay antes de spawnar a escada
             self.run(.wait(forDuration: 1.5)) { [weak self] in
                 guard let self else { return }
                 self.spawnLadder()
             }
-        }
-        
-        waveSystem.onWaveStart = { [weak self] wave in
-            guard let self else { return }
-            self.hud.updateWave(wave)
-            self.hud.updateWaveProgress(0)   // ← reseta a barra na troca de andar
-            self.showWaveBanner(wave: wave)
-            self.reshuffleBoxes()
-            if wave > 1 { self.removeLadderAndArrow() }
         }
     }
     
@@ -364,6 +349,7 @@ class GameScene: SKScene {
             self.coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
         }
     }
+    
     
     /// Main game loop: gathers input, updates systems in a deterministic order, and syncs the HUD.
     override func update(_ currentTime: TimeInterval) {
@@ -424,7 +410,7 @@ class GameScene: SKScene {
         
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
-
+            
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
                 let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
@@ -437,23 +423,23 @@ class GameScene: SKScene {
                 )
                 if !isSpecialNow { hud.flashButtonA() }
             }
-
+            
             if inputSystem.specialPressed && pl.specialReady {
                 inputSystem.specialPressed = false
-
+                
                 attackSystem.startSpecialAttack(
                     player: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
                     enemySystem: enemySystem
                 )
-
+                
                 // Zera a barra no componente e no HUD
                 pl.killStreak = 0
                 pl.specialReady = false
                 hud.updateSpecial(killStreak: 0, isReady: false)
             }
-
+            
             // Tiro (Joystick direito)
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
@@ -523,7 +509,7 @@ class GameScene: SKScene {
         if let ladder = ladderEntity,
            let ladderNode = ladder.get(TransformComponent.self)?.node,
            let playerNode = playerEntity.get(TransformComponent.self)?.node {
-
+            
             if playerNode.position.distance(to: ladderNode.position) < 40 {
                 // NÃO zere ladderEntity aqui — advanceFloor → removeLadderAndArrow cuida disso
                 advanceFloor()
@@ -574,7 +560,7 @@ class GameScene: SKScene {
         }
         
         // 13. HUD coins
-//        if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
+        //        if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
         
         // 14. Wave + coin spawn
         if let node = playerEntity.get(TransformComponent.self)?.node {
@@ -735,7 +721,7 @@ class GameScene: SKScene {
     
     private func spawnLadder() {
         guard let playerPos = playerEntity.get(TransformComponent.self)?.node.position else { return }
-
+        
         let margin: CGFloat = 150
         var pos: CGPoint
         repeat {
@@ -743,9 +729,9 @@ class GameScene: SKScene {
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
             pos = CGPoint(x: x, y: y)
         } while pos.distance(to: playerPos) < 300
-
+        
         ladderEntity = EntityFactory.makeLadder(at: pos, scene: self)
-
+        
         // Passa o cameraNode — seta será filha da câmera
         arrowNode = EntityFactory.makeArrow(attachedTo: cameraNode)
     }
@@ -753,12 +739,12 @@ class GameScene: SKScene {
     private func removeLadderAndArrow() {
         let ladderNode = ladderEntity?.get(TransformComponent.self)?.node
         ladderEntity   = nil
-
+        
         ladderNode?.run(.sequence([
             .fadeOut(withDuration: 0.3),
             .removeFromParent()
         ]))
-
+        
         arrowNode?.removeFromParent()
         arrowNode = nil
     }
@@ -770,20 +756,20 @@ class GameScene: SKScene {
             let ladderNode = ladderEntity?.get(TransformComponent.self)?.node,
             let playerNode = playerEntity.get(TransformComponent.self)?.node
         else { return }
-
+        
         let playerPos = playerNode.position
         let ladderPos = ladderNode.position
-
+        
         let dx    = ladderPos.x - playerPos.x
         let dy    = ladderPos.y - playerPos.y
         let angle = atan2(dy, dx)
-
+        
         // Como a seta é filha do cameraNode, a posição é relativa ao centro da tela
         arrow.position = CGPoint(
             x: cos(angle) * arrowRadius,
             y: sin(angle) * arrowRadius
         )
-
+        
         arrow.zRotation = angle - (.pi / 2)
     }
     
@@ -852,6 +838,7 @@ class GameScene: SKScene {
         for touch in touches {
             let loc = touch.location(in: cameraNode)
             let hitNodes = cameraNode.nodes(at: loc)
+            var hitUI = false
             
             for node in hitNodes {
                 if let nodeName = node.name {
@@ -862,40 +849,50 @@ class GameScene: SKScene {
                         if let button = node as? SKSpriteNode {
                             button.alpha = 0.7
                         }
-                        
+                        hitUI = true
                     case "buttonB":
                         inputSystem.specialPressed = true
                         // Visual feedback
                         if let button = node as? SKSpriteNode {
                             button.alpha = 0.7
                         }
-                        
+                        hitUI = true
                     case "leaderboardButton":
                         GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
-                        
+                        hitUI = true
                     case "pauseButton":
                         togglePause()
-                        
+                        hitUI = true
                     case "resumeButton":
                         togglePause()
-                        
+                        hitUI = true
                     case "continueButton":
                         handleContinue(view: view)
-                        
+                        hitUI = true
                     case "restartButton", "menuFromGameOver", "menuFromPause":
                         handleMenuNavigation(nodeName: nodeName, view: view)
-                        
-                    
-                        
+                        hitUI = true
                     default:
                         break
                     }
                 }
             }
+            
+            if !hitUI && loc.x < 0 && !isPausedByPlayer {
+                movementJoystick.injectTouchBegan(touch, in: cameraNode)
+            }
+        }
+    }
+    
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if !isPausedByPlayer {
+            movementJoystick.injectTouchesMoved(touches, in: cameraNode)
         }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        movementJoystick.injectTouchesEnded(touches, in: cameraNode)
+        
         for touch in touches {
             let loc = touch.location(in: cameraNode)
             let hitNodes = cameraNode.nodes(at: loc)
@@ -912,6 +909,8 @@ class GameScene: SKScene {
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        movementJoystick.injectTouchesEnded(touches, in: cameraNode)
+        
         // Reset button states if touches are cancelled
         inputSystem.attackPressed = false
         inputSystem.specialPressed = false
