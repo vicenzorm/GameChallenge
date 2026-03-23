@@ -116,19 +116,21 @@ class SettingsScene: SKScene {
                 case "musicSwitch":
                     AppManager.shared.toggleSound()
                     animatePressedToggle(toggle: musicSwitch, isOn: AppManager.shared.soundEnabled)
+                    vibrate(with: .light)
                 case "sFXSwitch":
                     AppManager.shared.toggleSFX()
                     animatePressedToggle(toggle: sFXSwitch, isOn: AppManager.shared.sFXEnabled)
+                    vibrate(with: .light)
                 case "hapticsSwitch":
                     AppManager.shared.toggleHaptics()
                     animatePressedToggle(toggle: hapticsSwitch, isOn: AppManager.shared.hapticsEnabled)
+                    vibrate(with: .light)
                     
                 case "backButton":
+                    vibrate(with: .light)
                     let menuScene = MenuScene(size: self.size)
                     menuScene.scaleMode = self.scaleMode
-                    self.run(sequence) {
-                        self.view?.presentScene(menuScene)
-                    }
+                    self.view?.presentScene(menuScene, transition: .moveIn(with: .left, duration: 0.5))
                     
                 default:
                     break

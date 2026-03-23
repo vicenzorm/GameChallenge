@@ -30,7 +30,11 @@ final class SoundManager {
     let swordAttack2  = SKAction.playSoundFileNamed("swordAttack2.wav",  waitForCompletion: false)  // yellowSkeleton
     let flameShot     = SKAction.playSoundFileNamed("flameShot.wav",     waitForCompletion: false)  // fireball
     let monsterBite   = SKAction.playSoundFileNamed("monsterBite.wav",   waitForCompletion: false)  // bix
-
+    
+    let healthPickup = SKAction.playSoundFileNamed("healthPickup.wav", waitForCompletion: false)  
+    let specialPickup = SKAction.playSoundFileNamed("specialPickup.wav", waitForCompletion: false)
+    let killAll = SKAction.playSoundFileNamed( "killAll.wav", waitForCompletion: false)
+    
     private init() {}
 
     // MARK: - Play SFX

@@ -119,13 +119,13 @@ class GameScene: SKScene {
         setupPlayer()
         collisionSystem.onPlayerHit = { [weak self] playerNode in
             guard let self, let sprite = playerNode as? SKSpriteNode else { return }
-
+            
             // ── Shake ─────────────────────────────────────────────────────
             self.shakeCamera()
-
+            
             // ── Som ───────────────────────────────────────────────────────
             SoundManager.shared.play(SoundManager.shared.playerDamaged, on: playerNode)
-
+            
             // ── Flash (colorize direto no sprite) ─────────────────────────
             guard let spriteComp = self.playerEntity.get(SpriteComponent.self) else { return }
             spriteComp.isFlashing = true
@@ -210,11 +210,11 @@ class GameScene: SKScene {
         movementJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_ball")
         shakeNode.addChild(movementJoystick)   // era cameraNode
         movementJoystick.isUserInteractionEnabled = true
-
+        
         attackJoystick = Joystick(baseAsset: "joystick_base", stickAsset: "joystick_shuriken")
         shakeNode.addChild(attackJoystick)     // era cameraNode
         attackJoystick.isUserInteractionEnabled = true
-
+        
         layoutJoystick()
     }
     
@@ -382,7 +382,7 @@ class GameScene: SKScene {
         
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
-
+            
             // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
                 let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
@@ -395,23 +395,23 @@ class GameScene: SKScene {
                 )
                 if !isSpecialNow { hud.flashButtonA() }
             }
-
+            
             if inputSystem.specialPressed && pl.specialReady {
                 inputSystem.specialPressed = false
-
+                
                 attackSystem.startSpecialAttack(
                     player: playerEntity,
                     enemies: enemyEntities,
                     scene: self,
                     enemySystem: enemySystem
                 )
-
+                
                 // Zera a barra no componente e no HUD
                 pl.killStreak = 0
                 pl.specialReady = false
                 hud.updateSpecial(killStreak: 0, isReady: false)
             }
-
+            
             // Tiro (Joystick direito)
             if attack.wantsToShoot {
                 attack.wantsToShoot = false
@@ -480,7 +480,7 @@ class GameScene: SKScene {
         if let ladder = ladderEntity,
            let ladderNode = ladder.get(TransformComponent.self)?.node,
            let playerNode = playerEntity.get(TransformComponent.self)?.node {
-
+            
             if playerNode.position.distance(to: ladderNode.position) < 40 {
                 // NÃO zere ladderEntity aqui — advanceFloor → removeLadderAndArrow cuida disso
                 advanceFloor()
@@ -525,11 +525,13 @@ class GameScene: SKScene {
         // 12. HUD health + game over
         if let h = playerEntity.get(HealthComponent.self) {
             hud.updateHealth(current: h.current, maxHP: h.max)
-            if !h.isAlive { triggerGameOver() }
+            if !h.isAlive {
+                triggerGameOver()
+            }
         }
         
         // 13. HUD coins
-//        if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
+        //        if let pl = playerEntity.get(PlayerComponent.self) { hud.updateCoins(pl.coins) }
         
         // 14. Wave + coin spawn
         if let node = playerEntity.get(TransformComponent.self)?.node {
@@ -585,6 +587,7 @@ class GameScene: SKScene {
     
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
+        vibrate(with: .light)
         isPausedByPlayer.toggle()
         
         // Esconde ou mostra os joysticks baseado no estado de pausa
@@ -690,7 +693,7 @@ class GameScene: SKScene {
     
     private func spawnLadder() {
         guard let playerPos = playerEntity.get(TransformComponent.self)?.node.position else { return }
-
+        
         let margin: CGFloat = 150
         var pos: CGPoint
         repeat {
@@ -698,9 +701,9 @@ class GameScene: SKScene {
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
             pos = CGPoint(x: x, y: y)
         } while pos.distance(to: playerPos) < 300
-
+        
         ladderEntity = EntityFactory.makeLadder(at: pos, scene: self)
-
+        
         // Passa o cameraNode — seta será filha da câmera
         arrowNode = EntityFactory.makeArrow(attachedTo: cameraNode)
     }
@@ -708,12 +711,12 @@ class GameScene: SKScene {
     private func removeLadderAndArrow() {
         let ladderNode = ladderEntity?.get(TransformComponent.self)?.node
         ladderEntity   = nil
-
+        
         ladderNode?.run(.sequence([
             .fadeOut(withDuration: 0.3),
             .removeFromParent()
         ]))
-
+        
         arrowNode?.removeFromParent()
         arrowNode = nil
     }
@@ -725,20 +728,20 @@ class GameScene: SKScene {
             let ladderNode = ladderEntity?.get(TransformComponent.self)?.node,
             let playerNode = playerEntity.get(TransformComponent.self)?.node
         else { return }
-
+        
         let playerPos = playerNode.position
         let ladderPos = ladderNode.position
-
+        
         let dx    = ladderPos.x - playerPos.x
         let dy    = ladderPos.y - playerPos.y
         let angle = atan2(dy, dx)
-
+        
         // Como a seta é filha do cameraNode, a posição é relativa ao centro da tela
         arrow.position = CGPoint(
             x: cos(angle) * arrowRadius,
             y: sin(angle) * arrowRadius
         )
-
+        
         arrow.zRotation = angle - (.pi / 2)
     }
     
@@ -812,6 +815,7 @@ class GameScene: SKScene {
                 if let nodeName = node.name {
                     switch nodeName {
                     case "buttonA":
+                        vibrate(with: .light)
                         inputSystem.attackPressed = true
                         // Visual feedback
                         if let button = node as? SKSpriteNode {
@@ -819,6 +823,7 @@ class GameScene: SKScene {
                         }
                         
                     case "buttonB":
+                        vibrate(with: .light)
                         inputSystem.specialPressed = true
                         // Visual feedback
                         if let button = node as? SKSpriteNode {
@@ -826,21 +831,26 @@ class GameScene: SKScene {
                         }
                         
                     case "leaderboardButton":
+                        vibrate(with: .light)
                         GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
                         
                     case "pauseButton":
+                        vibrate(with: .light)
                         togglePause()
                         
                     case "resumeButton":
+                        vibrate(with: .light)
                         togglePause()
                         
                     case "continueButton":
+                        vibrate(with: .light)
                         handleContinue(view: view)
                         
                     case "restartButton", "menuFromGameOver", "menuFromPause":
+                        vibrate(with: .light)
                         handleMenuNavigation(nodeName: nodeName, view: view)
                         
-                    
+                        
                         
                     default:
                         break
@@ -895,7 +905,7 @@ class GameScene: SKScene {
         
         //        nextScene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         nextScene.scaleMode = self.scaleMode
-        view.presentScene(nextScene, transition: .fade(withDuration: 0.4))
+        view.presentScene(nextScene)
     }
     
     // MARK: Helpers

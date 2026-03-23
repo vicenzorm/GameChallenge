@@ -117,6 +117,7 @@ class MenuScene: SKScene {
             if let name = touchedNode.name {
                 switch name {
                 case "playButton", "playLabel":
+                    vibrate(with: .light)
                     let gameScene = GameScene(size: self.size)
                     gameScene.scaleMode = self.scaleMode
                     self.run(specialSequence) {
@@ -124,14 +125,14 @@ class MenuScene: SKScene {
                     }
     
                 case "leaderboardButton", "leaderboardLabel":
+                    vibrate(with: .light)
                     GameCenterManager.shared.showLeaderboard(from: self.view?.window?.rootViewController)
                     
                 case "settingsButton", "settingsLabel":
+                    vibrate(with: .light)
                     let settingsScene = SettingsScene(size: self.size)
                     settingsScene.scaleMode = self.scaleMode
-                    self.run(sequence) {
-                        self.view?.presentScene(settingsScene)
-                    }
+                    self.view?.presentScene(settingsScene, transition: .moveIn(with: .right, duration: 0.5))
                     
                 default:
                     break
