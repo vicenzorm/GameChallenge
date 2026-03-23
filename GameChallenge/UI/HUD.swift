@@ -156,7 +156,7 @@ class HUD: SKNode {
         buttonB.size     = CGSize(width: 88, height: 88)
         buttonB.position = CGPoint(x: hw - 200, y: -hh + 80)
         buttonB.zPosition = 100
-        buttonB.alpha    = 0.5   // começa desabilitado
+        buttonB.alpha    = 0.01   // começa desabilitado
         buttonB.name     = "buttonB"
         
         // ── Button c — Shuriken (bottom-right) ─────────────────────
@@ -171,7 +171,7 @@ class HUD: SKNode {
         
         // Círculo preenchido azul — será revelado de baixo pra cima pela máscara
         let ringShape = SKShapeNode(circleOfRadius: ringRadius)
-        ringShape.fillColor   = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.6)
+        ringShape.fillColor   = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 1.0)
         ringShape.strokeColor = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.9)
         //ringShape.lineWidth   = 2
         
