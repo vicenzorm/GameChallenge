@@ -12,18 +12,25 @@ import Foundation
 class InputSystem {
     var attackPressed = false
     var specialPressed = false
+    var shootPressed = false // NOVO
 
-    func update(playerEntity: Entity?, movementDirection: CGPoint, attackDirection: CGPoint) {
+    func update(playerEntity: Entity?, movementDirection: CGPoint) {
         guard let player = playerEntity,
               let input = player.get(InputComponent.self) else { return }
 
         input.movementDirection = CGVector(dx: movementDirection.x, dy: movementDirection.y)
-        input.attackDirection = CGVector(dx: attackDirection.x, dy: attackDirection.y)
-
+        
         input.attackPressed = attackPressed
         input.specialPressed = specialPressed
 
+        if let attackComp = player.get(AttackComponent.self) {
+            if shootPressed {
+                attackComp.wantsToShoot = true
+            }
+        }
+
         attackPressed = false
         specialPressed = false
+        shootPressed = false
     }
 }

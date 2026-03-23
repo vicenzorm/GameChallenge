@@ -11,13 +11,13 @@
 import SpriteKit
 
 class HUD: SKNode {
-
+    
     private let waveLabel:      SKLabelNode
     private let buttonA: SKSpriteNode
     private let buttonB: SKSpriteNode
+    private let buttonC: SKSpriteNode
     private let pauseButton:    SKSpriteNode
     private let countdownLabel: SKLabelNode
-    
     
     private let healthSprite = SKSpriteNode(imageNamed: "healthBarFull")
     private let healthCrop: SKCropNode
@@ -29,7 +29,7 @@ class HUD: SKNode {
     // Overlay nodes (created on demand)
     private var pauseOverlay:   SKNode?
     private var gameOverOverlay: SKNode?
-
+    
     private let barMaxW: CGFloat = 160
     private let screenSize: CGSize
     
@@ -39,27 +39,27 @@ class HUD: SKNode {
     private let waveProgressBg:   SKSpriteNode
     private let waveProgressFill: SKCropNode
     private let waveProgressMask: SKSpriteNode
-
+    
     private let specialRingCrop: SKCropNode
     private let specialRingMask: SKSpriteNode
-
+    
     init(screenSize: CGSize) {
         self.screenSize = screenSize
         let hw = screenSize.width  / 2
         let hh = screenSize.height / 2
-
+        
         // ── Character Image ────────────────────────────────────────
         let charImg = SKSpriteNode(imageNamed: "characterImage")
         charImg.zPosition = 100
         charImg.position  = CGPoint(x: -hw + 60, y: hh - 50)
         charImg.size      = CGSize(width: 65, height: 65)
-
+        
         // ── Health bar (top-left) ──────────────────────────────────
         let barBg = SKSpriteNode(imageNamed: "healthBarBackground")
         barBg.size      = CGSize(width: 156, height: 22.7)
         barBg.position  = CGPoint(x: -hw + 160, y: hh - 35)
         barBg.zPosition = 99
-
+        
         healthSprite.size = CGSize(width: 156, height: 22.7)
         let hMask = SKSpriteNode(color: .white, size: healthSprite.size)
         hMask.anchorPoint = CGPoint(x: 0, y: 0.5)
@@ -71,13 +71,13 @@ class HUD: SKNode {
         hCrop.zPosition = 100
         healthCrop = hCrop
         healthMask = hMask
-
+        
         // ── Special bar (top-left, abaixo da health) ───────────────
         let specialBarBg = SKSpriteNode(imageNamed: "specialBarBackground")
         specialBarBg.size      = CGSize(width: 121.3, height: 13.5)
         specialBarBg.position  = CGPoint(x: -hw + 150, y: hh - 58)
         specialBarBg.zPosition = 99
-
+        
         let specialSprite = SKSpriteNode(imageNamed: "specialBarFull")
         specialSprite.size = CGSize(width: 121.3, height: 13.5)
         let sMask = SKSpriteNode(color: .white, size: specialSprite.size)
@@ -90,7 +90,7 @@ class HUD: SKNode {
         sCrop.zPosition = 100
         specialCrop = sCrop
         specialMask = sMask
-
+        
         // ── Wave label (top-centre) ────────────────────────────────
         waveLabel          = SKLabelNode(text: "Floor 1")
         waveLabel.fontName = AppManager.shared.secondaryFont
@@ -99,35 +99,35 @@ class HUD: SKNode {
         waveLabel.horizontalAlignmentMode = .center
         waveLabel.position  = CGPoint(x: 0, y: hh - 24)
         waveLabel.zPosition = 100
-
+        
         // ── Wave progress bar (abaixo do waveLabel) ────────────────
         let progBarW: CGFloat = 130
         let progBarH: CGFloat = 8
-
+        
         // Fundo usando o asset healthBarBackground como máscara visual
         let progBg = SKSpriteNode(imageNamed: "healthBarBackground")
         progBg.size      = CGSize(width: progBarW, height: progBarH)
         progBg.position  = CGPoint(x: 0, y: hh - 38)
         progBg.zPosition = 100
-
+        
         // Sprite de preenchimento — usa waveBarFull quando cheia, cor amarela enquanto carrega
         let progSprite = SKSpriteNode(imageNamed: "waveBarFull")
         progSprite.size = CGSize(width: progBarW, height: progBarH)
-
+        
         let progMask = SKSpriteNode(color: .white, size: CGSize(width: progBarW, height: progBarH))
         progMask.anchorPoint = CGPoint(x: 0, y: 0.5)
         progMask.position.x  = -progBarW / 2
-
+        
         let progCrop = SKCropNode()
         progCrop.addChild(progSprite)
         progCrop.maskNode  = progMask
         progCrop.position  = CGPoint(x: 0, y: hh - 38)
         progCrop.zPosition = 101
-
+        
         waveProgressBg   = progBg        // agora é SKSpriteNode — ajuste a declaração (veja abaixo)
         waveProgressFill = progCrop
         waveProgressMask = progMask
-
+        
         // ── Countdown label ────────────────────────────────────────
         countdownLabel          = SKLabelNode(text: "")
         countdownLabel.fontName = AppManager.shared.secondaryFont
@@ -136,21 +136,21 @@ class HUD: SKNode {
         countdownLabel.horizontalAlignmentMode = .center
         countdownLabel.position  = CGPoint(x: 0, y: hh - 52)   // empurrado pra baixo da barra
         countdownLabel.zPosition = 100
-
+        
         // ── Pause button (top-right) ───────────────────────────────
         pauseButton          = SKSpriteNode(imageNamed: "pauseButton")
         pauseButton.size     = CGSize(width: 45, height: 42)
         pauseButton.position = CGPoint(x: hw - 60, y: hh - 48)
         pauseButton.zPosition = 100
         pauseButton.name     = "pauseButton"
-
+        
         // ── Button A — attack (bottom-right) ──────────────────────
         buttonA          = SKSpriteNode(imageNamed: "attack_button")
         buttonA.size     = CGSize(width: 80, height: 80)
         buttonA.position = CGPoint(x: hw - 154, y: -hh + 152)
         buttonA.zPosition = 100
         buttonA.name     = "buttonA"
-
+        
         // ── Button B — special (bottom-right) ─────────────────────
         buttonB          = SKSpriteNode(imageNamed: "special_button_off")
         buttonB.size     = CGSize(width: 88, height: 88)
@@ -158,16 +158,23 @@ class HUD: SKNode {
         buttonB.zPosition = 100
         buttonB.alpha    = 0.5   // começa desabilitado
         buttonB.name     = "buttonB"
-
+        
+        // ── Button c — Shuriken (bottom-right) ─────────────────────
+        buttonC          = SKSpriteNode(imageNamed: "joystick_shuriken") // Reusando a imagem
+        buttonC.size     = CGSize(width: 80, height: 80)
+        buttonC.position = CGPoint(x: hw - 80, y: -hh + 80) // Posição do lado direito
+        buttonC.zPosition = 100
+        buttonC.name     = "buttonC"
+        
         // ── Anel de carga do especial (atrás do botão B) ───────────
         let ringRadius: CGFloat = 32   // mesmo raio do botão (88/2)
-
+        
         // Círculo preenchido azul — será revelado de baixo pra cima pela máscara
         let ringShape = SKShapeNode(circleOfRadius: ringRadius)
         ringShape.fillColor   = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.6)
         ringShape.strokeColor = UIColor(red: 0.3, green: 0.7, blue: 1.0, alpha: 0.9)
         //ringShape.lineWidth   = 2
-
+        
         // Converte o shape para textura para poder usar dentro do SKCropNode
         let ringTexture = SKView().texture(from: ringShape, crop: CGRect(
             x: -ringRadius, y: -ringRadius,
@@ -175,13 +182,13 @@ class HUD: SKNode {
         ))!
         let ringSprite = SKSpriteNode(texture: ringTexture)
         ringSprite.size = CGSize(width: ringRadius * 2, height: ringRadius * 2)
-
+        
         // Máscara cresce de baixo pra cima
         let ringMask = SKSpriteNode(color: .white,
-                                     size: CGSize(width: ringRadius * 2, height: 0))
+                                    size: CGSize(width: ringRadius * 2, height: 0))
         ringMask.anchorPoint = CGPoint(x: 0.5, y: 0)
         ringMask.position    = CGPoint(x: 0, y: -ringRadius)
-
+        
         let ringCrop = SKCropNode()
         ringCrop.addChild(ringSprite)
         ringCrop.maskNode  = ringMask
@@ -189,11 +196,11 @@ class HUD: SKNode {
         ringCrop.zPosition = -100
         specialRingCrop = ringCrop
         specialRingMask = ringMask
-
+        
         // ── super.init ─────────────────────────────────────────────
         super.init()
         zPosition = 99
-
+        
         addChild(charImg)
         addChild(barBg);         addChild(healthCrop)
         addChild(specialBarBg);  addChild(specialCrop)
@@ -202,28 +209,29 @@ class HUD: SKNode {
         addChild(pauseButton)
         addChild(specialRingCrop)   // anel ANTES do botão B para ficar atrás
         addChild(buttonA);       addChild(buttonB)
+        addChild(buttonC)
     }
-
+    
     required init?(coder aDecoder: NSCoder) { fatalError() }
-
+    
     // MARK: - Update
-
+    
     func updateHealth(current: CGFloat, maxHP: CGFloat) {
         let ratio = maxHP > 0 ? (current / maxHP) : 0
         healthMask.xScale    = ratio
-
+        
         healthSprite.colorBlendFactor = 1.0
         if ratio > 0.6      { healthSprite.color = .green }
         else if ratio > 0.3 { healthSprite.color = .yellow }
         else                { healthSprite.color = .red }
     }
-
+    
     // Barra de progresso da wave — chame do GameScene a cada inimigo morto
     // ratio: 0.0 (wave começou) → 1.0 (todos mortos)
     func updateWaveProgress(_ ratio: CGFloat) {
         let clamped = Swift.max(0, Swift.min(1, ratio))
         waveProgressMask.xScale = clamped
-
+        
         // Quando completa, mostra o asset waveBarFull; senão, cor amarela
         if let fill = waveProgressFill.children.first as? SKSpriteNode {
             if clamped >= 1.0 {
@@ -237,21 +245,21 @@ class HUD: SKNode {
             }
         }
     }
-
+    
     // Sobrescreva updateSpecial para também atualizar o anel:
     func updateSpecial(killStreak: Int, isReady: Bool) {
         let ratio = CGFloat(Swift.min(killStreak, PlayerComponent.weakKillsNeeded))
-                  / CGFloat(PlayerComponent.weakKillsNeeded)
+        / CGFloat(PlayerComponent.weakKillsNeeded)
         specialMask.xScale = Swift.max(0, Swift.min(1, ratio))
-
+        
         // Anel cresce de baixo pra cima
         let ringH = specialRingMask.size.width * Swift.max(0, Swift.min(1, ratio))
         specialRingMask.size = CGSize(width: specialRingMask.size.width, height: ringH)
-
+        
         // Textura e opacidade do botão B — tudo aqui, nunca em outro lugar
         buttonB.texture = SKTexture(imageNamed: isReady ? "special_button_on" : "special_button_off")
         buttonB.alpha   = isReady ? 1.0 : 0.5
-
+        
         if isReady {
             specialRingMask.size = CGSize(width: specialRingMask.size.width,
                                           height: specialRingMask.size.width)
@@ -274,13 +282,13 @@ class HUD: SKNode {
             specialCrop.alpha = 1.0
         }
     }
-
+    
     func updateWave(_ wave: Int) {
         waveLabel.text = "Floor \(wave)"
         countdownLabel.text = ""
         waveLabel.run(.sequence([.scale(to: 1.4, duration: 0.12), .scale(to: 1.0, duration: 0.12)]))
     }
-
+    
     func showCountdown(_ seconds: Int) {
         if seconds > 0 {
             countdownLabel.text = "Next floor in \(seconds)…"
@@ -288,13 +296,13 @@ class HUD: SKNode {
             countdownLabel.text = ""
         }
     }
-
+    
     func flashButtonA() {
         buttonA.run(.sequence([.scale(to: 0.82, duration: 0.05), .scale(to: 1.0, duration: 0.1)]))
     }
-
+    
     // MARK: - Pause Overlay
-
+    
     func showPauseOverlay(_ show: Bool) {
         if show {
             guard pauseOverlay == nil else { return }
@@ -306,15 +314,15 @@ class HUD: SKNode {
             pauseOverlay = nil
         }
     }
-
+    
     private func buildPauseOverlay() -> SKNode {
         let root = SKNode(); root.zPosition = 200
-
+        
         let backgroundTexture = SKTexture(imageNamed: "pauseBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
         bg.zPosition = 0
         root.addChild(bg)
-
+        
         let title = SKLabelNode(text: "Pause")
         title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
         title.fontColor = .white;
@@ -329,7 +337,7 @@ class HUD: SKNode {
         title2.zPosition = 1
         title2.horizontalAlignmentMode = .left
         root.addChild(title2)
-
+        
         root.addChild(makeOverlayButton(
             text: "Resume",
             pos: CGPoint(x: -262.25, y: -53.75),
@@ -344,21 +352,21 @@ class HUD: SKNode {
     }
     
     private func continueButtonText() -> String {
-
+        
         if AdManager.shared.canShowAd() {
             return "Continue"
         }
-
+        
         let remaining = Int(AdManager.shared.remainingCooldown())
         let minutes = remaining / 60
         let seconds = remaining % 60
-
+        
         return String(format: "Continue (%02d:%02d)", minutes, seconds)
     }
     
     func updateContinueCooldown() {
         guard let label = continueLabel else { return }
-
+        
         if AdManager.shared.canShowAd() {
             label.text = "Continue"
             continueButtonNode?.fillColor = UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
@@ -371,29 +379,29 @@ class HUD: SKNode {
             label.name = "continueDisabled"
         }
     }
-
+    
     // MARK: - Game Over Overlay
-
+    
     func showGameOver() {
         guard gameOverOverlay == nil else { return }
         let root = SKNode(); root.zPosition = 200
         gameOverOverlay = root
-
+        
         let backgroundTexture = SKTexture(imageNamed: "gameOverBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
         bg.zPosition = 0
         root.addChild(bg)
         
-
+        
         let title = SKLabelNode(text: "Game Over")
         title.fontName = "PressStart2P-Regular"; title.fontSize = 67
         title.fontColor = .white;
         title.position = CGPoint(x: 0, y: 33.5)
         title.zPosition = 1
         root.addChild(title)
-
+        
         let canShow = AdManager.shared.canShowAd()
-
+        
         root.addChild(makeOverlayButton(
             text: "Continue",
             pos: CGPoint(x: -183, y: -50),
@@ -416,7 +424,7 @@ class HUD: SKNode {
         gameOverOverlay?.removeFromParent()
         gameOverOverlay = nil
     }
-
+    
     private func makeOverlayButton(text: String,  pos: CGPoint, name: String) -> SKNode {
         let backgroundTexture = SKTexture(imageNamed: "buttonBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
