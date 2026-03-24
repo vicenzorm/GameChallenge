@@ -9,6 +9,7 @@
 // Landscape layout. All elements anchored to camera space.
 
 import SpriteKit
+import AVFoundation
 
 class HUD: SKNode {
     
@@ -45,6 +46,10 @@ class HUD: SKNode {
     
     private let specialRingCrop: SKCropNode
     private let specialRingMask: SKSpriteNode
+    
+    private var backgroundVideoNode: SKVideoNode?
+    private var videoPlayer: AVQueuePlayer?
+    private var videoLooper: AVPlayerLooper?
     
 
     init(screenSize: CGSize) {
@@ -250,6 +255,40 @@ class HUD: SKNode {
         }
     }
     
+    private func setupVideoBackground(videoName: String, rootNode: SKNode, size: CGSize) {
+        guard let videoURL = Bundle.main.url(forResource: videoName, withExtension: "mp4") else {
+            print("⚠️ Erro: Não foi possível carregar \(videoName).mp4")
+            return
+        }
+        
+        let playerItem = AVPlayerItem(url: videoURL)
+        let queuePlayer = AVQueuePlayer(playerItem: playerItem)
+        
+        videoLooper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+        videoPlayer = queuePlayer
+        
+        let videoNode = SKVideoNode(avPlayer: queuePlayer)
+        videoNode.size = size
+        videoNode.zPosition = 0
+        
+        backgroundVideoNode = videoNode
+        rootNode.addChild(videoNode)
+        
+        videoNode.play()
+    }
+    
+    private func stopVideoBackground() {
+        backgroundVideoNode?.pause()
+        videoLooper?.disableLooping()
+        videoPlayer?.removeAllItems()
+        
+        backgroundVideoNode?.removeFromParent()
+        
+        backgroundVideoNode = nil
+        videoPlayer = nil
+        videoLooper = nil
+    }
+    
     // Sobrescreva updateSpecial para também atualizar o anel:
     func updateSpecial(killStreak: Int, isReady: Bool) {
         let ratio = CGFloat(Swift.min(killStreak, PlayerComponent.weakKillsNeeded))
@@ -322,10 +361,7 @@ class HUD: SKNode {
     private func buildPauseOverlay() -> SKNode {
         let root = SKNode(); root.zPosition = 200
         
-        let backgroundTexture = SKTexture(imageNamed: "pauseBackground")
-        let bg = SKSpriteNode(texture: backgroundTexture)
-        bg.zPosition = 0
-        root.addChild(bg)
+        setupVideoBackground(videoName: "pause_video", rootNode: root, size: self.screenSize)
         
         let title = SKLabelNode(text: "Pause")
         title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
@@ -352,6 +388,8 @@ class HUD: SKNode {
             pos: CGPoint(x: -78.25, y: -53.75),
             name: "menuFromPause"
         ))
+        
+        
         return root
     }
     
