@@ -321,6 +321,7 @@ class GameScene: SKScene {
         let count      = 40          // tweak to taste
         let margin: CGFloat = 100    // min distance from world edge
         let clearRadius: CGFloat = 200  // spawn-free zone around the player start (0,0)
+        let minBoxDistance: CGFloat = 60 //distancia entre caixas
         
         var placed = 0
         var attempts = 0
@@ -332,8 +333,11 @@ class GameScene: SKScene {
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
             let pos = CGPoint(x: x, y: y)
             
-            // Keep the player start area clear
+            // longe do player
             guard hypot(pos.x, pos.y) > clearRadius else { continue }
+            
+            //longe de outras caixas
+            guard isPositionClear(pos, minDistance: minBoxDistance) else { continue }
             
             boxEntities.append(EntityFactory.makeBox(at: pos, scene: self))
             placed += 1
@@ -629,6 +633,16 @@ class GameScene: SKScene {
         
     }
     
+    private func isPositionClear(_ pos: CGPoint, minDistance: CGFloat) -> Bool {
+        for box in boxEntities {
+            guard let boxNode = box.get(TransformComponent.self)?.node else { continue }
+            if pos.distance(to: boxNode.position) < minDistance {
+                return false
+            }
+        }
+        return true
+    }
+    
     // MARK: - Screen Shake
     func shakeCamera(intensity: CGFloat = 5, duration: TimeInterval = 0.25) {
         shakeNode.removeAction(forKey: "shake")
@@ -747,16 +761,25 @@ class GameScene: SKScene {
         guard let playerPos = playerEntity.get(TransformComponent.self)?.node.position else { return }
         
         let margin: CGFloat = 150
-        var pos: CGPoint
-        repeat {
+        let minBoxDistance: CGFloat = 100
+        var pos: CGPoint = .zero
+        
+        var isValid = false
+        var attempts = 0
+        
+        while !isValid && attempts < 100 {
+            attempts += 1
             let x = CGFloat.random(in: -worldSize.width  / 2 + margin ... worldSize.width  / 2 - margin)
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
-            pos = CGPoint(x: x, y: y)
-        } while pos.distance(to: playerPos) < 300
+            let candidatePos = CGPoint(x: x, y: y)
+            
+            if candidatePos.distance(to: playerPos) >= 300 && isPositionClear(candidatePos, minDistance: minBoxDistance) {
+                pos = candidatePos
+                isValid = true
+            }
+        }
         
         ladderEntity = EntityFactory.makeLadder(at: pos, scene: self)
-        
-        // Passa o cameraNode — seta será filha da câmera
         arrowNode = EntityFactory.makeArrow(attachedTo: cameraNode)
     }
     
