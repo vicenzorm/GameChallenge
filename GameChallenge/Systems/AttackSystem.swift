@@ -25,7 +25,7 @@ class AttackSystem {
         else { return }
         
         let origin = attackerTransform.node.position
-        let range  = isSpecial ? attackComp.range * 1.3 : attackComp.range
+        let range  = isSpecial ? attackComp.range * 1 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 4  : attackComp.damage
         
         let contactRadius: CGFloat = 45
