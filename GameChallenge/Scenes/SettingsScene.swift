@@ -20,6 +20,19 @@ class SettingsScene: SKScene {
     var sFXSwitch: SKSpriteNode!
     var hapticsSwitch: SKSpriteNode!
     
+    private func animatePressedToggle(toggle: SKSpriteNode, isOn: Bool) {
+        let newTexture = isOn ? "miniButtonBackground" : "miniButtonDeactivated"
+        toggle.texture = SKTexture(imageNamed: newTexture)
+        toggle.texture?.filteringMode = .nearest
+
+        // Pulso de confirmação: flash rápido de opacidade
+        toggle.removeAction(forKey: "togglePulse")
+        toggle.run(.sequence([
+            .fadeAlpha(to: 0.5, duration: 0.06),
+            .fadeAlpha(to: 1.0, duration: 0.10)
+        ]), withKey: "togglePulse")
+    }
+    
     override init(size: CGSize) {
         super.init(size: size)
         
@@ -111,34 +124,52 @@ class SettingsScene: SKScene {
         for touch in touches {
             let location = touch.location(in: self)
             let touchedNode = self.atPoint(location)
-            if let name = touchedNode.name ?? touchedNode.parent?.name {
-                switch name {
-                case "musicSwitch":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+            guard let name = touchedNode.name ?? touchedNode.parent?.name else { return }
+
+            let buttonNode: SKNode = (touchedNode.parent?.name == name)
+                ? touchedNode.parent!
+                : touchedNode
+
+            switch name {
+            case "musicSwitch":
+                SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+                vibrate(with: .light)
+                buttonNode.springTap {
                     AppManager.shared.toggleSound()
-                    animatePressedToggle(toggle: musicSwitch, isOn: AppManager.shared.soundEnabled)
-                    vibrate(with: .light)
-                case "sFXSwitch":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+                    self.animatePressedToggle(toggle: self.musicSwitch,
+                                              isOn: AppManager.shared.soundEnabled)
+                }
+
+            case "sFXSwitch":
+                SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+                vibrate(with: .light)
+                buttonNode.springTap {
                     AppManager.shared.toggleSFX()
-                    animatePressedToggle(toggle: sFXSwitch, isOn: AppManager.shared.sFXEnabled)
-                    vibrate(with: .light)
-                case "hapticsSwitch":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+                    self.animatePressedToggle(toggle: self.sFXSwitch,
+                                              isOn: AppManager.shared.sFXEnabled)
+                }
+
+            case "hapticsSwitch":
+                SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+                vibrate(with: .light)
+                buttonNode.springTap {
                     AppManager.shared.toggleHaptics()
-                    animatePressedToggle(toggle: hapticsSwitch, isOn: AppManager.shared.hapticsEnabled)
-                    vibrate(with: .light)
-                    
-                case "backButton":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
-                    vibrate(with: .light)
+                    self.animatePressedToggle(toggle: self.hapticsSwitch,
+                                              isOn: AppManager.shared.hapticsEnabled)
+                }
+
+            case "backButton":
+                SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+                vibrate(with: .light)
+                buttonNode.springTap {
                     let menuScene = MenuScene(size: self.size)
                     menuScene.scaleMode = self.scaleMode
-                    self.view?.presentScene(menuScene, transition: .moveIn(with: .left, duration: 0.5))
-                    
-                default:
-                    break
+                    self.view?.presentScene(menuScene,
+                        transition: .moveIn(with: .left, duration: 0.5))
                 }
+
+            default:
+                break
             }
         }
     }

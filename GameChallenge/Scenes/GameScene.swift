@@ -86,6 +86,13 @@ class GameScene: SKScene {
     
     private let shakeNode = SKNode()
     
+    // MARK: Overlay Button Touch Tracking
+    private var trackedOverlayTouch: UITouch?
+    private var trackedOverlayNode: SKNode?
+    private var trackedOverlayName: String?
+    private var overlayTouchStartLocation: CGPoint = .zero
+    private let overlayCancelDragThreshold: CGFloat = 20
+    
     override init(size: CGSize) {
         //        pauseNode = Pause(size: size)
         super.init(size: size)
@@ -902,72 +909,68 @@ class GameScene: SKScene {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let view else { return }
-        
+
         for touch in touches {
-            let loc = touch.location(in: cameraNode)
+            let loc      = touch.location(in: cameraNode)
             let hitNodes = cameraNode.nodes(at: loc)
-            var hitUI = false
-            
+            var hitUI    = false
+
             for node in hitNodes {
-                if let nodeName = node.name {
-                    switch nodeName {
-                    case "buttonA":
-                        vibrate(with: .light)
-                        inputSystem.attackPressed = true
-                        // Visual feedback
-                        if let button = node as? SKSpriteNode {
-                            button.alpha = 0.7
-                        }
-                        hitUI = true
-                    case "buttonB":
-                        vibrate(with: .light)
-                        inputSystem.specialPressed = true
-                        // Visual feedback
-                        if let button = node as? SKSpriteNode {
-                            button.alpha = 0.7
-                        }
-                        hitUI = true
-                        
-                    case "buttonC":
-                        inputSystem.shootPressed = true
-                        if let button = node as? SKSpriteNode { button.alpha = 0.7 }
-                        hitUI = true
-                        
-                    case "leaderboardButton":
+                guard let nodeName = node.name else { continue }
+
+                switch nodeName {
+                case "buttonA":
+                    vibrate(with: .light)
+                    inputSystem.attackPressed = true
+                    (node as? SKSpriteNode)?.alpha = 0.7
+                    hitUI = true
+
+                case "buttonB":
+                    vibrate(with: .light)
+                    inputSystem.specialPressed = true
+                    (node as? SKSpriteNode)?.alpha = 0.7
+                    hitUI = true
+
+                case "buttonC":
+                    inputSystem.shootPressed = true
+                    (node as? SKSpriteNode)?.alpha = 0.7
+                    hitUI = true
+
+                case "leaderboardButton":
+                    SoundManager.shared.play(SoundManager.shared.button, on: node)
+                    vibrate(with: .light)
+                    GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
+                    hitUI = true
+
+                case "pauseButton":
+                    SoundManager.shared.play(SoundManager.shared.button, on: node)
+                    vibrate(with: .light)
+                    node.springTap { self.togglePause() }
+                    hitUI = true
+
+                case "resumeButton", "menuFromPause",
+                     "continueButton", "restartButton", "menuFromGameOver":
+                    // Inicia tracking — ação só dispara no touchesEnded
+                    if trackedOverlayTouch == nil {
+                        trackedOverlayTouch         = touch
+                        trackedOverlayNode          = node
+                        trackedOverlayName          = nodeName
+                        overlayTouchStartLocation   = loc
+                        // Press down
+                        node.removeAction(forKey: "springTap")
+                        node.run(.scale(to: 0.82, duration: 0.08), withKey: "springTap")
                         SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
-                        GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
-                        hitUI = true
-                    case "pauseButton":
-                        SoundManager.shared.play(SoundManager.shared.button, on: node)
-                        vibrate(with: .light)
-                        togglePause()
-                        hitUI = true
-                    case "resumeButton":
-                        SoundManager.shared.play(SoundManager.shared.button, on: node)
-                        vibrate(with: .light)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                                self?.togglePause()
-                            }
-                        hitUI = true
-                    case "continueButton":
-                        vibrate(with: .light)
-                        handleContinue(view: view)
-                        hitUI = true
-                    case "restartButton", "menuFromGameOver", "menuFromPause":
-                        vibrate(with: .light)
-                        run(SKAction.playSoundFileNamed("button.wav", waitForCompletion: false))
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-                                guard let self else { return }
-                                self.handleMenuNavigation(nodeName: nodeName, view: view)
-                            }
-                        hitUI = true
-                    default:
-                        break
                     }
+                    hitUI = true
+
+                default:
+                    break
                 }
+
+                if hitUI { break }
             }
-            
+
             if !hitUI && loc.x < 0 && !isPausedByPlayer {
                 movementJoystick.injectTouchBegan(touch, in: cameraNode)
             }
@@ -978,40 +981,99 @@ class GameScene: SKScene {
         if !isPausedByPlayer {
             movementJoystick.injectTouchesMoved(touches, in: cameraNode)
         }
+
+        // Cancela overlay button se arrastou longe
+        if let tracked = trackedOverlayTouch, touches.contains(tracked) {
+            let loc = tracked.location(in: cameraNode)
+            let dx  = abs(loc.x - overlayTouchStartLocation.x)
+            let dy  = abs(loc.y - overlayTouchStartLocation.y)
+            if dx > overlayCancelDragThreshold || dy > overlayCancelDragThreshold {
+                cancelOverlayButton()
+            }
+        }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         movementJoystick.injectTouchesEnded(touches, in: cameraNode)
-        
+
+        // Restore game buttons alpha
         for touch in touches {
             let loc = touch.location(in: cameraNode)
-            let hitNodes = cameraNode.nodes(at: loc)
-            
-            for node in hitNodes {
-                if node.name == "buttonA" || node.name == "buttonB" || node.name == "buttonC" {
-                    if let button = node as? SKSpriteNode {
-                        button.alpha = 1.0
-                    }
+            for node in cameraNode.nodes(at: loc) {
+                if ["buttonA", "buttonB", "buttonC"].contains(node.name) {
+                    (node as? SKSpriteNode)?.alpha = 1.0
                 }
             }
+        }
+
+        // Overlay button — confirma ação
+        guard let tracked = trackedOverlayTouch, touches.contains(tracked) else { return }
+        defer { clearOverlayTracking() }
+
+        guard let name = trackedOverlayName,
+              let node = trackedOverlayNode else { return }
+
+        // Bounce de saída
+        node.removeAction(forKey: "springTap")
+        let bounce = SKAction.scale(to: 1.12, duration: 0.10)
+        bounce.timingMode = .easeOut
+        let settle = SKAction.scale(to: 1.0, duration: 0.10)
+        settle.timingMode = .easeInEaseOut
+        node.run(.sequence([bounce, settle]), withKey: "springTap")
+
+        switch name {
+        case "resumeButton":
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.togglePause()
+            }
+
+        case "continueButton":
+            guard let view else { return }
+            handleContinue(view: view)
+
+        case "restartButton", "menuFromGameOver", "menuFromPause":
+            run(SKAction.playSoundFileNamed("button.wav", waitForCompletion: false))
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                guard let self else { return }
+                guard let view else { return }
+                self.handleMenuNavigation(nodeName: name, view: view)
+            }
+
+        default:
+            break
         }
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         movementJoystick.injectTouchesEnded(touches, in: cameraNode)
-        
-        // Reset button states if touches are cancelled
-        inputSystem.attackPressed = false
+
+        inputSystem.attackPressed  = false
         inputSystem.specialPressed = false
-        inputSystem.shootPressed = false
-        
-        // Reset button appearances
-        if let cameraNode = cameraNode {
-            let buttons = cameraNode.children.filter { $0.name == "buttonA" || $0.name == "buttonB" || $0.name == "buttonC" }
-            for button in buttons {
-                (button as? SKSpriteNode)?.alpha = 1.0
-            }
+        inputSystem.shootPressed   = false
+
+        if let buttons = cameraNode?.children.filter({ ["buttonA","buttonB","buttonC"].contains($0.name) }) {
+            buttons.forEach { ($0 as? SKSpriteNode)?.alpha = 1.0 }
         }
+
+        if let tracked = trackedOverlayTouch, touches.contains(tracked) {
+            cancelOverlayButton()
+        }
+    }
+    
+    // MARK: - Overlay Button Tracking Helpers
+
+    private func cancelOverlayButton() {
+        trackedOverlayNode?.removeAction(forKey: "springTap")
+        let restore = SKAction.scale(to: 1.0, duration: 0.12)
+        restore.timingMode = .easeOut
+        trackedOverlayNode?.run(restore, withKey: "springTap")
+        clearOverlayTracking()
+    }
+
+    private func clearOverlayTracking() {
+        trackedOverlayTouch = nil
+        trackedOverlayNode  = nil
+        trackedOverlayName  = nil
     }
     
     // MARK: Navigation Helpers

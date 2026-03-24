@@ -320,38 +320,49 @@ class HUD: SKNode {
     }
     
     private func buildPauseOverlay() -> SKNode {
-        let root = SKNode(); root.zPosition = 200
-        
+        let root = SKNode()
+        root.zPosition = 200
+
         let backgroundTexture = SKTexture(imageNamed: "pauseBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
         bg.zPosition = 0
         root.addChild(bg)
-        
+
         let title = SKLabelNode(text: "Pause")
-        title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
-        title.fontColor = .white;
-        title.position = CGPoint(x: -286.25, y: 83.5)
+        title.fontName = "PressStart2P-Regular"
+        title.fontSize = 22.36
+        title.fontColor = .white
+        title.horizontalAlignmentMode = .left
+        title.position = CGPoint(x: -341.25, y: 83.5)
         title.zPosition = 1
         root.addChild(title)
-        
+
         let title2 = SKLabelNode(text: waveLabel.text)
-        title2.fontName = "PressStart2P-Regular"; title2.fontSize = 67
-        title2.fontColor = .white;
+        title2.fontName = "PressStart2P-Regular"
+        title2.fontSize = 67
+        title2.fontColor = .white
         title2.position = CGPoint(x: -341.25, y: 0)
         title2.zPosition = 1
         title2.horizontalAlignmentMode = .left
         root.addChild(title2)
-        
-        root.addChild(makeOverlayButton(
+
+        // Botões alinhados à esquerda, lado a lado, na mesma âncora do título
+        let buttonSpacing: CGFloat = 16
+        let buttonW: CGFloat = 200   // largura de makeOverlayButton (160+40)
+        let leftAnchor: CGFloat = -341.25
+
+        let resumeBtn = makeOverlayButton(
             text: "Resume",
-            pos: CGPoint(x: -262.25, y: -53.75),
+            pos: CGPoint(x: leftAnchor + buttonW / 2, y: -53.75),
             name: "resumeButton"
-        ))
-        root.addChild(makeOverlayButton(
+        )
+        let exitBtn = makeOverlayButton(
             text: "Exit",
-            pos: CGPoint(x: -78.25, y: -53.75),
+            pos: CGPoint(x: leftAnchor + buttonW + buttonSpacing + buttonW / 2, y: -53.75),
             name: "menuFromPause"
-        ))
+        )
+        root.addChild(resumeBtn)
+        root.addChild(exitBtn)
         return root
     }
     
