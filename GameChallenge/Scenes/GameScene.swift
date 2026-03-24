@@ -420,13 +420,15 @@ class GameScene: SKScene {
             clampCamera()   // ← aplica o clamp depois de seguir o player
         }
         
+        let allTargets = enemyEntities + boxEntities
+        
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
             if attack.isAttacking {
                 let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
                     attackerEntity: playerEntity,
-                    enemies: enemyEntities,
+                    enemies: allTargets,
                     scene: self,
                     isSpecial: isSpecialNow,
                     enemySystem: enemySystem
@@ -440,7 +442,7 @@ class GameScene: SKScene {
                 
                 attackSystem.startSpecialAttack(
                     player: playerEntity,
-                    enemies: enemyEntities,
+                    enemies: allTargets,
                     scene: self,
                     enemySystem: enemySystem
                 )
@@ -520,7 +522,7 @@ class GameScene: SKScene {
         enemyProjectileEntities.removeAll { deadEnemyProjIDs.contains($0.id) }
         
         // 7. Health bars
-        healthSystem.update(entities: enemyEntities)
+        healthSystem.update(entities: allTargets)
         
         // 7b
         enemySystem.update(enemies: enemyEntities + dyingEnemies, currentTime: currentTime)
@@ -575,6 +577,19 @@ class GameScene: SKScene {
         dyingEnemies.removeAll {
             $0.get(TransformComponent.self)?.node.parent == nil
         }
+        
+        // 10b
+        let deadBoxes = boxEntities.filter { $0.get(HealthComponent.self)?.isAlive == false }
+        for box in deadBoxes {
+            if let node = box.get(TransformComponent.self)?.node {
+                node.run(.sequence([
+                    .scale(to: 0.1, duration: 0.15),
+                    .removeFromParent()
+                ]))
+            }
+        }
+        let deadBoxIDs = Set(deadBoxes.map { $0.id })
+        boxEntities.removeAll { deadBoxIDs.contains($0.id) }
         
         // 11. Special charge
         if let pl = playerEntity.get(PlayerComponent.self) {
