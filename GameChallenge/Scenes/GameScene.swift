@@ -908,16 +908,21 @@ class GameScene: SKScene {
                     case "resumeButton":
                         SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
-                        togglePause()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                                self?.togglePause()
+                            }
                         hitUI = true
                     case "continueButton":
                         vibrate(with: .light)
                         handleContinue(view: view)
                         hitUI = true
                     case "restartButton", "menuFromGameOver", "menuFromPause":
-                        SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
-                        handleMenuNavigation(nodeName: nodeName, view: view)
+                        run(SKAction.playSoundFileNamed("button.wav", waitForCompletion: false))
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                                guard let self else { return }
+                                self.handleMenuNavigation(nodeName: nodeName, view: view)
+                            }
                         hitUI = true
                     default:
                         break
