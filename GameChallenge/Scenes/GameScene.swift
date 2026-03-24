@@ -420,13 +420,17 @@ class GameScene: SKScene {
             clampCamera()   // ← aplica o clamp depois de seguir o player
         }
         
+        let allTargets = enemyEntities + boxEntities
+        
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
+            
+            // Ataque corpo a corpo (Botão A) — só executa se isAttacking está ativo
             if attack.isAttacking {
                 let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
                     attackerEntity: playerEntity,
-                    enemies: enemyEntities,
+                    enemies: allTargets,
                     scene: self,
                     isSpecial: isSpecialNow,
                     enemySystem: enemySystem
@@ -440,7 +444,7 @@ class GameScene: SKScene {
                 
                 attackSystem.startSpecialAttack(
                     player: playerEntity,
-                    enemies: enemyEntities,
+                    enemies: allTargets,
                     scene: self,
                     enemySystem: enemySystem
                 )
@@ -472,6 +476,7 @@ class GameScene: SKScene {
                         
                         // Só atira se houver um inimigo próximo na tela (evita atirar no vazio)
                         if let target = nearestEnemy, let targetNode = target.get(TransformComponent.self)?.node {
+                            vibrate(with: .light)
                             attack.lastShotTime = currentTime
                             
                             // Calcula direção inicial
@@ -520,7 +525,7 @@ class GameScene: SKScene {
         enemyProjectileEntities.removeAll { deadEnemyProjIDs.contains($0.id) }
         
         // 7. Health bars
-        healthSystem.update(entities: enemyEntities)
+        healthSystem.update(entities: allTargets)
         
         // 7b
         enemySystem.update(enemies: enemyEntities + dyingEnemies, currentTime: currentTime)
@@ -576,6 +581,19 @@ class GameScene: SKScene {
             $0.get(TransformComponent.self)?.node.parent == nil
         }
         
+        // 10b
+        let deadBoxes = boxEntities.filter { $0.get(HealthComponent.self)?.isAlive == false }
+        for box in deadBoxes {
+            if let node = box.get(TransformComponent.self)?.node {
+                node.run(.sequence([
+                    .scale(to: 0.1, duration: 0.15),
+                    .removeFromParent()
+                ]))
+            }
+        }
+        let deadBoxIDs = Set(deadBoxes.map { $0.id })
+        boxEntities.removeAll { deadBoxIDs.contains($0.id) }
+        
         // 11. Special charge
         if let pl = playerEntity.get(PlayerComponent.self) {
             pl.killStreak += killedPts
@@ -591,7 +609,9 @@ class GameScene: SKScene {
         // 12. HUD health + game over
         if let h = playerEntity.get(HealthComponent.self) {
             hud.updateHealth(current: h.current, maxHP: h.max)
-            if !h.isAlive { triggerGameOver() }
+            if !h.isAlive {
+                triggerGameOver()
+            }
         }
         
         // 13. HUD coins
@@ -661,6 +681,8 @@ class GameScene: SKScene {
     
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
+        
+        vibrate(with: .light)
         isPausedByPlayer.toggle()
         
         // Esconde ou mostra os joysticks baseado no estado de pausa
@@ -890,6 +912,7 @@ class GameScene: SKScene {
                 if let nodeName = node.name {
                     switch nodeName {
                     case "buttonA":
+                        vibrate(with: .light)
                         inputSystem.attackPressed = true
                         // Visual feedback
                         if let button = node as? SKSpriteNode {
@@ -897,6 +920,7 @@ class GameScene: SKScene {
                         }
                         hitUI = true
                     case "buttonB":
+                        vibrate(with: .light)
                         inputSystem.specialPressed = true
                         // Visual feedback
                         if let button = node as? SKSpriteNode {
@@ -910,19 +934,33 @@ class GameScene: SKScene {
                         hitUI = true
                         
                     case "leaderboardButton":
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
+                        vibrate(with: .light)
                         GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
                         hitUI = true
                     case "pauseButton":
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
+                        vibrate(with: .light)
                         togglePause()
                         hitUI = true
                     case "resumeButton":
-                        togglePause()
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
+                        vibrate(with: .light)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                                self?.togglePause()
+                            }
                         hitUI = true
                     case "continueButton":
+                        vibrate(with: .light)
                         handleContinue(view: view)
                         hitUI = true
                     case "restartButton", "menuFromGameOver", "menuFromPause":
-                        handleMenuNavigation(nodeName: nodeName, view: view)
+                        vibrate(with: .light)
+                        run(SKAction.playSoundFileNamed("button.wav", waitForCompletion: false))
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                                guard let self else { return }
+                                self.handleMenuNavigation(nodeName: nodeName, view: view)
+                            }
                         hitUI = true
                     default:
                         break
@@ -990,7 +1028,7 @@ class GameScene: SKScene {
         }
         
         nextScene.scaleMode = self.scaleMode
-        view.presentScene(nextScene, transition: .fade(withDuration: 0.4))
+        view.presentScene(nextScene)
     }
     
     // MARK: Helpers

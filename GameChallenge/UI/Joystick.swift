@@ -12,6 +12,8 @@ class Joystick: SKNode {
     private let stickNode: SKSpriteNode
     private let radius: CGFloat = 50
 
+    private var isAtEdge: Bool = false
+    
     private var trackingTouch: UITouch?
 
     var velocity: CGPoint = .zero
@@ -50,6 +52,7 @@ class Joystick: SKNode {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard trackingTouch == nil else { return }
+        vibrate(with: .light)
         for touch in touches {
             let location = touch.location(in: self)
             if hypot(location.x, location.y) <= radius + 30 {
@@ -80,9 +83,14 @@ class Joystick: SKNode {
         let distance = hypot(location.x, location.y)
 
         if distance <= radius {
+            isAtEdge = false
             stickNode.position = location
             velocity = CGPoint(x: location.x / radius, y: location.y / radius)
         } else {
+            if !isAtEdge {
+                vibrate(with: .light)
+                isAtEdge = true
+            }
             let angle = atan2(location.y, location.x)
             stickNode.position = CGPoint(x: cos(angle) * radius, y: sin(angle) * radius)
             velocity = CGPoint(x: cos(angle), y: sin(angle))

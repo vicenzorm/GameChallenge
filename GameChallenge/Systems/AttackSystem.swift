@@ -8,7 +8,7 @@ import CoreMotion
 import Foundation
 
 class AttackSystem {
-
+    
     func update(
         attackerEntity: Entity,
         enemies: [Entity],
@@ -23,65 +23,52 @@ class AttackSystem {
             let sprite            = attackerEntity.get(SpriteComponent.self),
             !attackComp.didApplyDamage
         else { return }
-
+        
         let origin = attackerTransform.node.position
         let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 20  : attackComp.damage
         
-        // ── Raio de contato (inimigos colados sempre tomam dano) ─────────
-        // Independente da direção — garante que inimigos sobrepostos ao player
-        // sempre sejam atingidos. Ajuste contactRadius para mais ou menos alcance.
-        let contactRadius: CGFloat = 38   // ← raio do "bolsão" ao redor do player
-
+        let contactRadius: CGFloat = 38
+        
         var didHitAny = false
-
+        
         for enemy in enemies {
             guard
                 let enemyTransform = enemy.get(TransformComponent.self),
                 let health         = enemy.get(HealthComponent.self)
             else { continue }
-
+            
             let toEnemy = enemyTransform.node.position - origin
             let dist    = toEnemy.length
-
+            
             guard dist <= range else { continue }
             
-            // Inimigos dentro do contactRadius sempre tomam dano (sem checar direção)
             let inContactZone = dist <= contactRadius
-
+            
             // Ataque normal: só acerta inimigos na metade frontal
-            if !isSpecial {
+            if !isSpecial && !inContactZone {
                 let facingVector = sprite.lastDirection.vector
                 let dot = facingVector.dx * toEnemy.normalized.dx
-                        + facingVector.dy * toEnemy.normalized.dy
+                + facingVector.dy * toEnemy.normalized.dy
                 guard dot > 0 else { continue }
             }
-
+            
             health.current = Swift.max(0, health.current - damage)
-            enemySystem.triggerDmg(enemy: enemy)
-            SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+            
+            if enemy.get(EnemyComponent.self) != nil {
+                enemySystem.triggerDmg(enemy: enemy)
+                SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+            } else if enemy.get(BoxComponent.self) != nil {
+                health.healthBarBackground?.run(.fadeIn(withDuration: 0.2))
+                SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+            }
+            
             didHitAny = true
         }
-
-        // Visual do hitbox — só aparece se acertou pelo menos um inimigo
-//        if didHitAny {
-//            attackComp.attackNode?.removeFromParent()
-//            let arc = SKShapeNode(circleOfRadius: range)
-//            arc.fillColor   = isSpecial
-//                ? UIColor.cyan.withAlphaComponent(0.25)
-//                : UIColor.white.withAlphaComponent(0.15)
-//            arc.strokeColor = isSpecial ? .cyan : .white
-//            arc.lineWidth   = 1.5
-//            arc.position    = origin
-//            arc.zPosition   = 5
-//            scene.addChild(arc)
-//            attackComp.attackNode = arc
-//            arc.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
-//        }
-
+        
         attackComp.didApplyDamage = true
     }
-
+    
     // MARK: - Special Attack (giro 360)
     func startSpecialAttack(player: Entity, enemies: [Entity], scene: SKScene, enemySystem: EnemySystem) {
         guard
@@ -89,12 +76,12 @@ class AttackSystem {
             let transform = player.get(TransformComponent.self),
             let attack    = player.get(AttackComponent.self)
         else { return }
-
+        
         let node = transform.node
-
+        
         attack.isAttacking     = true
         attack.didApplyDamage  = false
-
+        
         // Animação de giro: percorre as 4 direções rapidamente
         let frames = [
             sprite.attackDownTextures[0],
@@ -102,16 +89,16 @@ class AttackSystem {
             sprite.attackUpTextures[0],
             sprite.attackLeftTextures[0]
         ]
-
+        
         let spinAnimation = SKAction.animate(with: frames, timePerFrame: 0.05)
         let totalSpin     = SKAction.repeat(spinAnimation, count: 3)
         let rotateNode    = SKAction.rotate(byAngle: .pi * 2, duration: 0.6)
-
+        
         node.run(SKAction.group([totalSpin, rotateNode])) {
             attack.isAttacking = false
             node.zRotation     = 0
         }
-
+        
         // Aplica dano omnidirecional imediatamente
         self.update(
             attackerEntity: player,

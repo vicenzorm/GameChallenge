@@ -564,8 +564,29 @@ class EntityFactory {
             node.run(anim)
         }
         
+        let barWidth: CGFloat  = node.size.width * 1.2
+        let barHeight: CGFloat = 5
+        let barBg = SKShapeNode(rectOf: CGSize(width: barWidth, height: barHeight), cornerRadius: 2)
+        barBg.fillColor   = UIColor(white: 0.2, alpha: 0.85)
+        barBg.strokeColor = .clear
+        barBg.position    = CGPoint(x: 0, y: node.size.height / 2 + 8)
+        barBg.zPosition   = 1
+        barBg.alpha       = 0 // Começa invisível
+        node.addChild(barBg)
+        
+        let barFill = SKShapeNode(rectOf: CGSize(width: barWidth - 2, height: barHeight - 2), cornerRadius: 1.5)
+        barFill.fillColor   = .green
+        barFill.strokeColor = .clear
+        barFill.zPosition   = 1
+        barBg.addChild(barFill)
+        
+        let health = HealthComponent(max: EnemyComponent.EnemyType.weak.maxHealth)
+        health.healthBarBackground = barBg
+        health.healthBarFill       = barFill
+        
         entity.add(TransformComponent(node: node))
         entity.add(BoxComponent(type: obstacleType))
+        entity.add(health)
         
         return entity
     }

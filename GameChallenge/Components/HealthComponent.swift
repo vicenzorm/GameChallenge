@@ -25,3 +25,4 @@ class HealthComponent: Component {
     var ratio: CGFloat { current / max }
     var isAlive: Bool { current > 0 }
 }
+

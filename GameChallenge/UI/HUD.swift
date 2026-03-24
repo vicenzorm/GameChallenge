@@ -34,7 +34,10 @@ class HUD: SKNode {
     private let screenSize: CGSize
     
     private var continueLabel: SKLabelNode?
-    private var continueButtonNode: SKShapeNode?
+    private var continueButtonNode: SKSpriteNode?
+
+
+//    private var continueButtonNode: SKShapeNode?
     
     private let waveProgressBg:   SKSpriteNode
     private let waveProgressFill: SKCropNode
@@ -43,6 +46,7 @@ class HUD: SKNode {
     private let specialRingCrop: SKCropNode
     private let specialRingMask: SKSpriteNode
     
+
     init(screenSize: CGSize) {
         self.screenSize = screenSize
         let hw = screenSize.width  / 2
@@ -352,93 +356,228 @@ class HUD: SKNode {
     }
     
     private func continueButtonText() -> String {
+
+
+//        if AdManager.shared.canShowAd() {
+//            return "Continue"
+//        }
+//
+//        let remaining = Int(AdManager.shared.remainingCooldown())
+//        let minutes = remaining / 60
+//        let seconds = remaining % 60
+//
+//        return String(format: "Continue (%02d:%02d)", minutes, seconds)
         
-        if AdManager.shared.canShowAd() {
-            return "Continue"
-        }
-        
-        let remaining = Int(AdManager.shared.remainingCooldown())
-        let minutes = remaining / 60
-        let seconds = remaining % 60
-        
-        return String(format: "Continue (%02d:%02d)", minutes, seconds)
+        return "Continue"
     }
     
+//    func updateContinueCooldown() {
+//        guard let label = continueLabel, let button = continueButtonNode else { return }
+//
+//        // Buscamos o ícone dentro do botão (ele tem o mesmo nome do botão)
+//        let icon = button.childNode(withName: "//" + (button.name ?? "")) as? SKSpriteNode
+//
+//
+//        
+//        if AdManager.shared.canShowAd() {
+//            return "Continue"
+//        }
+//        
+//        let remaining = Int(AdManager.shared.remainingCooldown())
+//        let minutes = remaining / 60
+//        let seconds = remaining % 60
+//        
+//        return String(format: "Continue (%02d:%02d)", minutes, seconds)
+//    }
+    
     func updateContinueCooldown() {
-        guard let label = continueLabel else { return }
+        guard let label = continueLabel, let button = continueButtonNode else { return }
         
+        
+        let icon = button.childNode(withName: "//" + (button.name ?? "")) as? SKSpriteNode
+
         if AdManager.shared.canShowAd() {
-            label.text = "Continue"
-            continueButtonNode?.fillColor = UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
-            continueButtonNode?.name = "continueButton"
+            // --- ESTADO ATIVO ---
+            button.color = .white
+            button.colorBlendFactor = 0
+            
+            label.fontColor = .white
+            
+            icon?.color = .white
+            icon?.colorBlendFactor = 1.0
+            
+            button.name = "continueButton"
             label.name = "continueButton"
+            icon?.name = "continueButton"
         } else {
-            label.text = continueButtonText()
-            continueButtonNode?.fillColor = .darkGray
-            continueButtonNode?.name = "continueDisabled"
+            // --- ESTADO CINZA (COOLDOWN) ---
+            button.color = .gray
+            button.colorBlendFactor = 1
+            
+            label.fontColor = .gray
+            label.alpha = 0.3
+            
+            icon?.color = .gray // Pintamos o ícone de cinza
+            icon?.colorBlendFactor = 1.0
+            
+            button.name = "continueDisabled"
             label.name = "continueDisabled"
+            icon?.name = "continueDisabled"
         }
     }
     
     // MARK: - Game Over Overlay
     
     func showGameOver() {
-        guard gameOverOverlay == nil else { return }
-        let root = SKNode(); root.zPosition = 200
-        gameOverOverlay = root
         
+        guard gameOverOverlay == nil else { return }
+        let root = SKNode();
+        root.alpha = 0
+        root.zPosition = 200
+        gameOverOverlay = root
+
         let backgroundTexture = SKTexture(imageNamed: "gameOverBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
         bg.zPosition = 0
         root.addChild(bg)
-        
-        
+
         let title = SKLabelNode(text: "Game Over")
-        title.fontName = "PressStart2P-Regular"; title.fontSize = 67
-        title.fontColor = .white;
+        title.fontName = "PressStart2P-Regular"
+        title.fontSize = 67
+        title.fontColor = .white
         title.position = CGPoint(x: 0, y: 33.5)
         title.zPosition = 1
         root.addChild(title)
-        
+
         let canShow = AdManager.shared.canShowAd()
         
-        root.addChild(makeOverlayButton(
+        // Passando o asset "AD" aqui
+        let continueBtn = makeOverlayButton(
             text: "Continue",
-            pos: CGPoint(x: -183, y: -50),
-            name: canShow ? "continueButton" : "continueDisabled"))
+            pos: CGPoint(x: -210, y: -50),
+            name: canShow ? "continueButton" : "continueDisabled",
+            iconAssetName: "AD"
+        )
         
-        root.addChild(makeOverlayButton(
-            text: "Restart",
-            pos: CGPoint(x: 0, y: -50),
-            name: "restartButton"
-        ))
-        root.addChild(makeOverlayButton(
-            text: "Menu",
-            pos: CGPoint(x: 183, y: -50),
-            name: "menuFromGameOver"
-        ))
+        continueButtonNode = continueBtn as? SKSpriteNode
+        continueLabel = firstLabel(in: continueBtn)
+        let continueIcon = firstIcon(in: continueBtn)
+
+        if !canShow {
+            // Aplica o cinza total que a gente configurou (Shader ou Alpha)
+            continueButtonNode?.color = .gray
+            continueButtonNode?.colorBlendFactor = 1
+            
+            continueLabel?.fontColor = .gray
+            continueLabel?.alpha = 0.3
+            
+            continueIcon?.color = .gray
+            continueIcon?.colorBlendFactor = 1.0
+            continueIcon?.alpha = 0.3
+        }
+        
+        root.addChild(continueBtn)
+        
+        root.addChild(makeOverlayButton(text: "Restart", pos: CGPoint(x: 0, y: -50), name: "restartButton"))
+        root.addChild(makeOverlayButton(text: "Menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
+        
         addChild(root)
+        
+        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
+        root.run(fadeIn)
     }
     
     func hideGameOver() {
         gameOverOverlay?.removeFromParent()
         gameOverOverlay = nil
+        continueButtonNode = nil
+        continueLabel = nil
     }
-    
-    private func makeOverlayButton(text: String,  pos: CGPoint, name: String) -> SKNode {
+
+    private func makeOverlayButton(text: String, pos: CGPoint, name: String, iconAssetName: String? = nil) -> SKNode {
         let backgroundTexture = SKTexture(imageNamed: "buttonBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
+        
+        // Padding mantido como você gostou
+        bg.size = CGSize(width: 160 + 40, height: 40 + 10)
         bg.zPosition = 1
         bg.position = pos
         bg.name = name
         
+        let container = SKNode()
+        
         let lbl = SKLabelNode(text: text)
         lbl.name = name
-        lbl.fontName = "PressStart2P-Regular"; lbl.fontSize = 11.75; lbl.fontColor = .white
-        lbl.verticalAlignmentMode = .center; lbl.horizontalAlignmentMode = .center
-        lbl.zPosition = 2
-        bg.addChild(lbl)
-        return bg
+        lbl.fontName = "PressStart2P-Regular"
+        lbl.fontSize = 11.75
+        lbl.fontColor = .white
+        lbl.verticalAlignmentMode = .center
+        lbl.horizontalAlignmentMode = .left
         
+        if let assetName = iconAssetName {
+            // --- MUDANÇA AQUI: Carrega o asset direto ---
+            let icon = SKSpriteNode(imageNamed: assetName)
+            icon.name = name
+            
+            // Ajuste o tamanho do ícone "AD" conforme necessário
+            icon.size = CGSize(width: 25, height: 25)
+            
+            let spacing: CGFloat = 8
+            let totalWidth = icon.size.width + spacing + lbl.frame.width
+            let startX = -totalWidth / 2
+            
+            icon.position = CGPoint(x: startX + icon.size.width / 2, y: 0)
+            lbl.position = CGPoint(x: startX + icon.size.width + spacing, y: 0)
+            
+            container.addChild(icon)
+        } else {
+            lbl.horizontalAlignmentMode = .center
+            lbl.position = .zero
+        }
+        
+        container.addChild(lbl)
+        container.zPosition = 2
+        bg.addChild(container)
+        
+        return bg
+    }
+    
+    private func createSymbolTexture(name: String, fontSize: CGFloat, color: UIColor) -> SKTexture? {
+        let config = UIImage.SymbolConfiguration(pointSize: fontSize, weight: .bold)
+        
+        guard let image = UIImage(systemName: name, withConfiguration: config)?
+            .withTintColor(color, renderingMode: .alwaysTemplate) else { return nil }
+
+        // Renderiza manualmente já com a cor aplicada
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        color.set()
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let finalImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        guard let finalImage else { return nil }
+        return SKTexture(image: finalImage)
+    }
+    
+    private func firstLabel(in node: SKNode) -> SKLabelNode? {
+        var result: SKLabelNode?
+        node.enumerateChildNodes(withName: "//*") { child, stop in
+            if let label = child as? SKLabelNode {
+                result = label
+                stop.pointee = true
+            }
+        }
+        return result
+    }
+    
+    private func firstIcon(in node: SKNode) -> SKSpriteNode? {
+        var result: SKSpriteNode?
+        node.enumerateChildNodes(withName: "//*") { child, stop in
+            if let sprite = child as? SKSpriteNode, sprite.texture != nil {
+                result = sprite
+                stop.pointee = true
+            }
+        }
+        return result
     }
 }
