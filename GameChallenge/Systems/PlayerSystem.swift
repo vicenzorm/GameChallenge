@@ -65,6 +65,7 @@ class PlayerSystem {
         let isShooting = input.attackDirection.dx != 0 || input.attackDirection.dy != 0
         if isShooting && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
                     
+            vibrate(with: .light)
             attack.lastAttackTime = currentTime
             attack.wantsToShoot = true
             attack.shootDirection = input.attackDirection
@@ -79,6 +80,7 @@ class PlayerSystem {
 
         // "ATTACK HANDLING"
         if input.attackPressed && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
+            vibrate(with: .medium)
             attack.isAttacking    = true
             attack.lastAttackTime = currentTime
             attack.didApplyDamage = false
@@ -94,6 +96,7 @@ class PlayerSystem {
 
         // "Special handling"
         if input.specialPressed && player.specialReady && !sprite.isAttacking {
+            vibrate(with: .heavy)
             player.specialReady   = false
             player.killStreak     = 0
             attack.isAttacking    = true

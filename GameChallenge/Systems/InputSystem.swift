@@ -25,6 +25,7 @@ class InputSystem {
 
         if let attackComp = player.get(AttackComponent.self) {
             if shootPressed {
+                
                 attackComp.wantsToShoot = true
             }
         }

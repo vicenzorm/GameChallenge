@@ -429,8 +429,11 @@ class HUD: SKNode {
     // MARK: - Game Over Overlay
     
     func showGameOver() {
+        
         guard gameOverOverlay == nil else { return }
-        let root = SKNode(); root.zPosition = 200
+        let root = SKNode();
+        root.alpha = 0
+        root.zPosition = 200
         gameOverOverlay = root
 
         let backgroundTexture = SKTexture(imageNamed: "gameOverBackground")
@@ -479,6 +482,9 @@ class HUD: SKNode {
         root.addChild(makeOverlayButton(text: "Menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
         
         addChild(root)
+        
+        let fadeIn = SKAction.fadeIn(withDuration: 0.5)
+        root.run(fadeIn)
     }
     
     func hideGameOver() {

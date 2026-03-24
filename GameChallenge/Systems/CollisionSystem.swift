@@ -76,6 +76,7 @@ class CollisionSystem {
         if tookDamageThisFrame && hitFeedbackCooldown == 0 {
             hitFeedbackCooldown = hitFeedbackInterval
             onPlayerHit?(playerTransform.node)
+            vibrate(with: .heavy)
         }
     }
 
@@ -92,20 +93,24 @@ class CollisionSystem {
 
     func handleItemPickup(player: Entity, item: Entity, scene: GameScene) {
         guard let itemType = item.get(ItemComponent.self)?.type else { return }
+        guard let playerNode = player.get(TransformComponent.self)?.node else {return}
 
         switch itemType {
         case .healthPotion:
+            SoundManager.shared.play(SoundManager.shared.healthPickup, on: playerNode)
             if let hp = player.get(HealthComponent.self) {
                 hp.current = min(hp.max, hp.current + 50)
                 onPlayerHealed?()
             }
         case .specialCharge:
+            SoundManager.shared.play(SoundManager.shared.specialPickup, on: playerNode)
             if let pl = player.get(PlayerComponent.self) {
                 pl.killStreak   = max(pl.killStreak, PlayerComponent.weakKillsNeeded)
                 pl.specialReady = true
                 onPlayerSpecialCharged?()   // ← adicione aqui
             }
         case .killAll:
+            SoundManager.shared.play(SoundManager.shared.killAll, on: playerNode)
             scene.clearEnemiesAroundPlayer()
             onKillAllUsed?()   
         }
