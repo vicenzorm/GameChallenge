@@ -15,6 +15,8 @@ class HealthComponent: Component {
     var healthBarBackground: SKShapeNode?
     var healthBarFill: SKShapeNode?
 
+    var isInvulnerable: Bool = false
+    
     init(max: CGFloat) {
         self.max = max
         self.current = max
@@ -23,3 +25,4 @@ class HealthComponent: Component {
     var ratio: CGFloat { current / max }
     var isAlive: Bool { current > 0 }
 }
+

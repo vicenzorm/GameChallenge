@@ -10,6 +10,10 @@ import CoreMotion
 import Foundation
 
 class PlayerSystem {
+    
+    private var lastFootstepTime: TimeInterval = 0
+    private let footstepInterval: TimeInterval = 0.25
+    
     func update(
         playerEntity: Entity,
         motionDirection: CGVector,
@@ -52,137 +56,121 @@ class PlayerSystem {
             }
         }
 
-        // Clamp to world bounds
-        let worldHalf: CGFloat = 1180
+        // Clamp to world bounds — deve ser metade do worldSize menos margem do sprite
+        let worldHalf: CGFloat = 880   // 1800/2 - margem de ~20px
         node.position.x = Swift.max(-worldHalf, Swift.min(worldHalf, node.position.x))
         node.position.y = Swift.max(-worldHalf, Swift.min(worldHalf, node.position.y))
-
-        // ATTACK HANDLING - OTIMIZADO PARA INSTANTÂNEO
-        if input.attackPressed && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
-            
-            // 1. MARCA O ATAQUE COMO ATIVO IMEDIATAMENTE
-            attack.isAttacking = true
+        
+        // RANGED ATTACK HANDLING (Tiro)
+        let isShooting = input.attackDirection.dx != 0 || input.attackDirection.dy != 0
+        if isShooting && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
+                    
+            vibrate(with: .light)
             attack.lastAttackTime = currentTime
-            
-            // 2. ATIVA A ANIMAÇÃO
-            sprite.isAttacking = true
-            sprite.currentFrame = 0
-            sprite.lastFrameTime = currentTime
-            
-            // 3. JÁ MOSTRA O PRIMEIRO FRAME DO ATAQUE INSTANTANEAMENTE
-            if !sprite.attackTextures.isEmpty {
-                node.texture = sprite.attackTextures[0]
+            attack.wantsToShoot = true
+            attack.shootDirection = input.attackDirection
+                    
+            // Opcional: Vira o personagem para o lado do tiro
+            if abs(input.attackDirection.dx) > abs(input.attackDirection.dy) {
+                sprite.currentDirection = input.attackDirection.dx > 0 ? .right : .left
+            } else {
+                sprite.currentDirection = input.attackDirection.dy > 0 ? .up : .down
             }
         }
 
-        // Special handling
-        if input.specialPressed && player.specialReady && !sprite.isAttacking {
-            player.specialReady = false
-            player.killStreak = 0
-            
-            // MESMA LÓGICA DO ATAQUE NORMAL
-            attack.isAttacking = true
+        // "ATTACK HANDLING"
+        if input.attackPressed && !sprite.isAttacking && (currentTime - attack.lastAttackTime) >= attack.cooldown {
+            vibrate(with: .medium)
+            attack.isAttacking    = true
             attack.lastAttackTime = currentTime
-            sprite.isAttacking = true
-            sprite.currentFrame = 0
-            sprite.lastFrameTime = currentTime
+            attack.didApplyDamage = false
+            sprite.isAttacking    = true
+            sprite.isSpecialAttack = false
+            sprite.currentFrame   = 0
+            sprite.lastFrameTime  = currentTime
+            node.setScale(1.5)
+            node.texture = sprite.currentAttackTextures.first
             
-            if !sprite.attackTextures.isEmpty {
-                node.texture = sprite.attackTextures[0]
-            }
+            SoundManager.shared.play(SoundManager.shared.attack1, on: node)
+        }
+
+        // "Special handling"
+        if input.specialPressed && player.specialReady && !sprite.isAttacking {
+            vibrate(with: .heavy)
+            player.specialReady   = false
+            player.killStreak     = 0
+            attack.isAttacking    = true
+            attack.lastAttackTime = currentTime
+            attack.didApplyDamage = false
+            sprite.isAttacking    = true
+            sprite.isSpecialAttack = true
+            sprite.currentFrame   = 0
+            sprite.lastFrameTime  = currentTime
+            node.setScale(1.5)
+            node.texture = sprite.attackTextures.first
         }
         
         // Update sprite animation with current time
+        guard !sprite.isFlashing else { return }
         updateSpriteAnimation(sprite: sprite, node: node, currentTime: currentTime, attack: attack)
+
     }
     
-    private func updateSpriteAnimation(sprite: SpriteComponent, node: SKSpriteNode, currentTime: TimeInterval, attack: AttackComponent) {
-        
-        // Se não está atacando, faz a animação normal de movimento/idle
-        if !sprite.isAttacking {
-            if sprite.isMoving {
-                // Animação de movimento
-                let textures: [SKTexture]
-                switch sprite.currentDirection {
-                case .down:
-                    textures = sprite.downTextures
-                case .up:
-                    textures = sprite.upTextures
-                case .left:
-                    textures = sprite.leftTextures
-                case .right:
-                    textures = sprite.rightTextures
-                }
-                
-                // Controle de tempo para animação de movimento
-                if currentTime - sprite.lastFrameTime >= sprite.animationSpeed {
-                    sprite.currentFrame = (sprite.currentFrame + 1) % textures.count
-                    node.texture = textures[sprite.currentFrame]
-                    sprite.lastFrameTime = currentTime
-                }
-            } else {
-                // Idle - volta pro primeiro frame da última direção
-                switch sprite.lastDirection {
-                case .down:
-                    node.texture = sprite.downTextures.first
-                case .up:
-                    node.texture = sprite.upTextures.first
-                case .left:
-                    node.texture = sprite.leftTextures.first
-                case .right:
-                    node.texture = sprite.rightTextures.first
-                }
-            }
+    private func updateSpriteAnimation(
+        sprite: SpriteComponent,
+        node: SKSpriteNode,
+        currentTime: TimeInterval,
+        attack: AttackComponent
+    ) {
+        guard currentTime - sprite.lastFrameTime >= sprite.animationSpeed else { return }
+        sprite.lastFrameTime = currentTime
+
+        // ── IDLE ──────────────────────────────────────────────────────────────
+        if !sprite.isAttacking && !sprite.isMoving {
+            node.texture = sprite.currentIdleTexture
             return
         }
+
+        // ── MOVIMENTO ─────────────────────────────────────────────────────────
         
-        // SE ESTÁ ATACANDO - animação de ataque
-        if currentTime - sprite.lastFrameTime >= sprite.animationSpeed {
+        if !sprite.isAttacking {
+            let textures: [SKTexture]
+            switch sprite.currentDirection {
+            case .down:  textures = sprite.downTextures
+            case .up:    textures = sprite.upTextures
+            case .left:  textures = sprite.leftTextures
+            case .right: textures = sprite.rightTextures
+            }
+            sprite.currentFrame = (sprite.currentFrame + 1) % textures.count
+            node.texture = textures[sprite.currentFrame]
             
-            // Avança para o próximo frame
-            sprite.currentFrame += 1
-            
-            // Verifica se a animação de ataque terminou
-            if sprite.currentFrame >= sprite.attackTextures.count {
-                // ATAQUE FINALIZADO - reseta tudo
-                sprite.isAttacking = false
-                attack.isAttacking = false
-                sprite.currentFrame = 0
-                
-                // Volta para o estado apropriado (idle ou movimento)
-                if sprite.isMoving {
-                    // Se estava andando, volta pra animação de movimento
-                    let textures: [SKTexture]
-                    switch sprite.currentDirection {
-                    case .down:
-                        textures = sprite.downTextures
-                    case .up:
-                        textures = sprite.upTextures
-                    case .left:
-                        textures = sprite.leftTextures
-                    case .right:
-                        textures = sprite.rightTextures
-                    }
-                    node.texture = textures[0]
-                } else {
-                    // Se estava parado, volta pro idle
-                    switch sprite.lastDirection {
-                    case .down:
-                        node.texture = sprite.downTextures.first
-                    case .up:
-                        node.texture = sprite.upTextures.first
-                    case .left:
-                        node.texture = sprite.leftTextures.first
-                    case .right:
-                        node.texture = sprite.rightTextures.first
-                    }
-                }
-                return
+            if sprite.isMoving && currentTime - lastFootstepTime > footstepInterval {
+                SoundManager.shared.play(SoundManager.shared.footstep, on: node)
+                lastFootstepTime = currentTime
             }
             
-            // Atualiza a textura do ataque
-            node.texture = sprite.attackTextures[sprite.currentFrame]
-            sprite.lastFrameTime = currentTime
+            return
         }
+
+        // ── ATAQUE ────────────────────────────────────────────────────────────
+        let atkFrames = sprite.isSpecialAttack
+            ? sprite.attackTextures
+            : sprite.currentAttackTextures
+
+        sprite.currentFrame += 1
+
+        if sprite.currentFrame >= atkFrames.count {
+            sprite.isAttacking     = false
+            sprite.isSpecialAttack = false
+            attack.isAttacking     = false
+            sprite.currentFrame    = 0
+            node.setScale(1.0)  // ← adiciona aqui
+            node.texture = sprite.isMoving
+                ? sprite.currentAttackTextures.first
+                : sprite.currentIdleTexture
+            return
+        }
+
+        node.texture = atkFrames[sprite.currentFrame]
     }
 }
