@@ -587,6 +587,7 @@ class GameScene: SKScene {
     
     /// Toggles pause state and updates HUD accordingly.
     func togglePause() {
+        
         vibrate(with: .light)
         isPausedByPlayer.toggle()
         
@@ -831,14 +832,17 @@ class GameScene: SKScene {
                         }
                         
                     case "leaderboardButton":
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
                         GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
                         
                     case "pauseButton":
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
                         togglePause()
                         
                     case "resumeButton":
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
                         togglePause()
                         
@@ -847,6 +851,7 @@ class GameScene: SKScene {
                         handleContinue(view: view)
                         
                     case "restartButton", "menuFromGameOver", "menuFromPause":
+                        SoundManager.shared.play(SoundManager.shared.button, on: node)
                         vibrate(with: .light)
                         handleMenuNavigation(nodeName: nodeName, view: view)
                         

@@ -114,19 +114,23 @@ class SettingsScene: SKScene {
             if let name = touchedNode.name ?? touchedNode.parent?.name {
                 switch name {
                 case "musicSwitch":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     AppManager.shared.toggleSound()
                     animatePressedToggle(toggle: musicSwitch, isOn: AppManager.shared.soundEnabled)
                     vibrate(with: .light)
                 case "sFXSwitch":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     AppManager.shared.toggleSFX()
                     animatePressedToggle(toggle: sFXSwitch, isOn: AppManager.shared.sFXEnabled)
                     vibrate(with: .light)
                 case "hapticsSwitch":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     AppManager.shared.toggleHaptics()
                     animatePressedToggle(toggle: hapticsSwitch, isOn: AppManager.shared.hapticsEnabled)
                     vibrate(with: .light)
                     
                 case "backButton":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     vibrate(with: .light)
                     let menuScene = MenuScene(size: self.size)
                     menuScene.scaleMode = self.scaleMode

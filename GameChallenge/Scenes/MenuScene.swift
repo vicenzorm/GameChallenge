@@ -117,6 +117,7 @@ class MenuScene: SKScene {
             if let name = touchedNode.name {
                 switch name {
                 case "playButton", "playLabel":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     vibrate(with: .light)
                     let gameScene = GameScene(size: self.size)
                     gameScene.scaleMode = self.scaleMode
@@ -125,10 +126,12 @@ class MenuScene: SKScene {
                     }
     
                 case "leaderboardButton", "leaderboardLabel":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     vibrate(with: .light)
                     GameCenterManager.shared.showLeaderboard(from: self.view?.window?.rootViewController)
                     
                 case "settingsButton", "settingsLabel":
+                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
                     vibrate(with: .light)
                     let settingsScene = SettingsScene(size: self.size)
                     settingsScene.scaleMode = self.scaleMode

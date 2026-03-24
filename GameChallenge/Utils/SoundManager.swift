@@ -35,6 +35,7 @@ final class SoundManager {
     let specialPickup = SKAction.playSoundFileNamed("specialPickup.wav", waitForCompletion: false)
     let killAll = SKAction.playSoundFileNamed( "killAll.wav", waitForCompletion: false)
     
+    
     private init() {}
 
     // MARK: - Play SFX
