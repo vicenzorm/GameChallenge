@@ -34,7 +34,7 @@ class HUD: SKNode {
     private let screenSize: CGSize
     
     private var continueLabel: SKLabelNode?
-    private var continueButtonNode: SKShapeNode?
+    private var continueButtonNode: SKSpriteNode?
 
     init(screenSize: CGSize) {
         self.screenSize = screenSize
@@ -248,30 +248,52 @@ class HUD: SKNode {
     
     private func continueButtonText() -> String {
 
-        if AdManager.shared.canShowAd() {
-            return "Continue"
-        }
-
-        let remaining = Int(AdManager.shared.remainingCooldown())
-        let minutes = remaining / 60
-        let seconds = remaining % 60
-
-        return String(format: "Continue (%02d:%02d)", minutes, seconds)
+//        if AdManager.shared.canShowAd() {
+//            return "Continue"
+//        }
+//
+//        let remaining = Int(AdManager.shared.remainingCooldown())
+//        let minutes = remaining / 60
+//        let seconds = remaining % 60
+//
+//        return String(format: "Continue (%02d:%02d)", minutes, seconds)
+        
+        return "Continue"
     }
     
     func updateContinueCooldown() {
-        guard let label = continueLabel else { return }
+        guard let label = continueLabel, let button = continueButtonNode else { return }
+
+        // Buscamos o ícone dentro do botão (ele tem o mesmo nome do botão)
+        let icon = button.childNode(withName: "//" + (button.name ?? "")) as? SKSpriteNode
 
         if AdManager.shared.canShowAd() {
-            label.text = "Continue"
-            continueButtonNode?.fillColor = UIColor(red: 0.2, green: 0.3, blue: 0.1, alpha: 0.95)
-            continueButtonNode?.name = "continueButton"
+            // --- ESTADO ATIVO ---
+            button.color = .white
+            button.colorBlendFactor = 0
+            
+            label.fontColor = .white
+            
+            icon?.color = .white
+            icon?.colorBlendFactor = 1.0
+            
+            button.name = "continueButton"
             label.name = "continueButton"
+            icon?.name = "continueButton"
         } else {
-            label.text = continueButtonText()
-            continueButtonNode?.fillColor = .darkGray
-            continueButtonNode?.name = "continueDisabled"
+            // --- ESTADO CINZA (COOLDOWN) ---
+            button.color = .gray
+            button.colorBlendFactor = 1
+            
+            label.fontColor = .gray
+            label.alpha = 0.3
+            
+            icon?.color = .gray // Pintamos o ícone de cinza
+            icon?.colorBlendFactor = 1.0
+            
+            button.name = "continueDisabled"
             label.name = "continueDisabled"
+            icon?.name = "continueDisabled"
         }
     }
 
@@ -282,58 +304,162 @@ class HUD: SKNode {
         let root = SKNode(); root.zPosition = 200
         gameOverOverlay = root
 
+        // Background do Overlay
         let backgroundTexture = SKTexture(imageNamed: "gameOverBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
         bg.zPosition = 0
         root.addChild(bg)
-        
 
+        // Título Game Over
         let title = SKLabelNode(text: "Game Over")
-        title.fontName = "PressStart2P-Regular"; title.fontSize = 67
-        title.fontColor = .white;
+        title.fontName = "PressStart2P-Regular"
+        title.fontSize = 67
+        title.fontColor = .white
         title.position = CGPoint(x: 0, y: 33.5)
         title.zPosition = 1
         root.addChild(title)
 
         let canShow = AdManager.shared.canShowAd()
-
-        root.addChild(makeOverlayButton(
-            text: "Continue",
-            pos: CGPoint(x: -183, y: -50),
-            name: canShow ? "continueButton" : "continueDisabled"))
         
+        // 1. Criação do botão de Continue (com ícone play.display)
+        let continueBtn = makeOverlayButton(
+            text: "Continue",
+            pos: CGPoint(x: -210, y: -50),
+            name: canShow ? "continueButton" : "continueDisabled",
+            symbolName: "play.display"
+        )
+        
+        // Armazena a referência do fundo do botão
+        continueButtonNode = continueBtn as? SKSpriteNode
+        
+        // Busca robusta do label/icone dentro da hierarquia do botão.
+        continueLabel = firstLabel(in: continueBtn)
+        let continueIcon = firstIcon(in: continueBtn)
+
+        // 2. Aplicação do estado inicial de Cooldown (Todo Cinza)
+        if !canShow {
+            // Pinta o fundo de cinza
+            continueButtonNode?.color = .gray
+            continueButtonNode?.colorBlendFactor = 1
+            
+            // Pinta o texto de cinza claro
+            continueLabel?.fontColor = .gray
+            continueLabel?.alpha = 0.5
+            
+            // Pinta o ícone de cinza
+            continueIcon?.color = .gray
+            continueIcon?.colorBlendFactor = 1.0
+        }
+        
+        root.addChild(continueBtn)
+        
+        // 3. Botão Restart (Centralizado)
         root.addChild(makeOverlayButton(
             text: "Restart",
             pos: CGPoint(x: 0, y: -50),
             name: "restartButton"
         ))
+        
+        // 4. Botão Menu (Direita)
         root.addChild(makeOverlayButton(
             text: "Menu",
-            pos: CGPoint(x: 183, y: -50),
+            pos: CGPoint(x: 210, y: -50),
             name: "menuFromGameOver"
         ))
+        
         addChild(root)
     }
     
     func hideGameOver() {
         gameOverOverlay?.removeFromParent()
         gameOverOverlay = nil
+        continueButtonNode = nil
+        continueLabel = nil
     }
 
-    private func makeOverlayButton(text: String,  pos: CGPoint, name: String) -> SKNode {
+    private func makeOverlayButton(text: String, pos: CGPoint, name: String, symbolName: String? = nil) -> SKNode {
         let backgroundTexture = SKTexture(imageNamed: "buttonBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
+        
+        // --- AJUSTE DE PADDING ---
+        // Aumentamos o tamanho original em 40px na largura e 10px na altura
+        bg.size = CGSize(width: 160 + 40, height: 40 + 10)
         bg.zPosition = 1
         bg.position = pos
         bg.name = name
         
+        let container = SKNode() // Container para centralizar ícone + texto juntos
+        
         let lbl = SKLabelNode(text: text)
         lbl.name = name
-        lbl.fontName = "PressStart2P-Regular"; lbl.fontSize = 11.75; lbl.fontColor = .white
-        lbl.verticalAlignmentMode = .center; lbl.horizontalAlignmentMode = .center
-        lbl.zPosition = 2
-        bg.addChild(lbl)
-        return bg
+        lbl.fontName = "PressStart2P-Regular"
+        lbl.fontSize = 11.75
+        lbl.fontColor = .white
+        lbl.verticalAlignmentMode = .center
+        lbl.horizontalAlignmentMode = .left // Mudamos para left para alinhar com o ícone
         
+        if let symbol = symbolName, let texture = createSymbolTexture(name: symbol, fontSize: 20, color: .white) {
+            let icon = SKSpriteNode(texture: texture)
+        
+            icon.name = name
+            let spacing: CGFloat = 8 // Espaço entre ícone e texto
+            
+            // Calculamos a largura total para centralizar o conjunto
+            let totalWidth = icon.size.width + spacing + lbl.frame.width
+            let startX = -totalWidth / 2
+            
+            icon.position = CGPoint(x: startX + icon.size.width / 2, y: 0)
+            lbl.position = CGPoint(x: startX + icon.size.width + spacing, y: 0)
+            
+            container.addChild(icon)
+        } else {
+            lbl.horizontalAlignmentMode = .center
+            lbl.position = .zero
+        }
+        
+        container.addChild(lbl)
+        container.zPosition = 2
+        bg.addChild(container)
+        
+        return bg
+    }
+    
+    private func createSymbolTexture(name: String, fontSize: CGFloat, color: UIColor) -> SKTexture? {
+        let config = UIImage.SymbolConfiguration(pointSize: fontSize, weight: .bold)
+        
+        guard let image = UIImage(systemName: name, withConfiguration: config)?
+            .withTintColor(color, renderingMode: .alwaysTemplate) else { return nil }
+
+        // Renderiza manualmente já com a cor aplicada
+        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        color.set()
+        image.draw(in: CGRect(origin: .zero, size: image.size))
+        let finalImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        guard let finalImage else { return nil }
+        return SKTexture(image: finalImage)
+    }
+    
+    private func firstLabel(in node: SKNode) -> SKLabelNode? {
+        var result: SKLabelNode?
+        node.enumerateChildNodes(withName: "//*") { child, stop in
+            if let label = child as? SKLabelNode {
+                result = label
+                stop.pointee = true
+            }
+        }
+        return result
+    }
+    
+    private func firstIcon(in node: SKNode) -> SKSpriteNode? {
+        var result: SKSpriteNode?
+        node.enumerateChildNodes(withName: "//*") { child, stop in
+            if let sprite = child as? SKSpriteNode, sprite.texture != nil {
+                result = sprite
+                stop.pointee = true
+            }
+        }
+        return result
     }
 }
