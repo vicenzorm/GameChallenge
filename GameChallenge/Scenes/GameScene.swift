@@ -321,6 +321,7 @@ class GameScene: SKScene {
         let count      = 40          // tweak to taste
         let margin: CGFloat = 100    // min distance from world edge
         let clearRadius: CGFloat = 200  // spawn-free zone around the player start (0,0)
+        let minBoxDistance: CGFloat = 60 //distancia entre caixas
         
         var placed = 0
         var attempts = 0
@@ -332,8 +333,11 @@ class GameScene: SKScene {
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
             let pos = CGPoint(x: x, y: y)
             
-            // Keep the player start area clear
+            // longe do player
             guard hypot(pos.x, pos.y) > clearRadius else { continue }
+            
+            //longe de outras caixas
+            guard isPositionClear(pos, minDistance: minBoxDistance) else { continue }
             
             boxEntities.append(EntityFactory.makeBox(at: pos, scene: self))
             placed += 1
@@ -416,13 +420,15 @@ class GameScene: SKScene {
             clampCamera()   // ← aplica o clamp depois de seguir o player
         }
         
+        let allTargets = enemyEntities + boxEntities
+        
         // 6. Attack & Shooting
         if let attack = playerEntity.get(AttackComponent.self), let pl = playerEntity.get(PlayerComponent.self) {
             if attack.isAttacking {
                 let isSpecialNow = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
                 attackSystem.update(
                     attackerEntity: playerEntity,
-                    enemies: enemyEntities,
+                    enemies: allTargets,
                     scene: self,
                     isSpecial: isSpecialNow,
                     enemySystem: enemySystem
@@ -436,7 +442,7 @@ class GameScene: SKScene {
                 
                 attackSystem.startSpecialAttack(
                     player: playerEntity,
-                    enemies: enemyEntities,
+                    enemies: allTargets,
                     scene: self,
                     enemySystem: enemySystem
                 )
@@ -516,7 +522,7 @@ class GameScene: SKScene {
         enemyProjectileEntities.removeAll { deadEnemyProjIDs.contains($0.id) }
         
         // 7. Health bars
-        healthSystem.update(entities: enemyEntities)
+        healthSystem.update(entities: allTargets)
         
         // 7b
         enemySystem.update(enemies: enemyEntities + dyingEnemies, currentTime: currentTime)
@@ -571,6 +577,19 @@ class GameScene: SKScene {
         dyingEnemies.removeAll {
             $0.get(TransformComponent.self)?.node.parent == nil
         }
+        
+        // 10b
+        let deadBoxes = boxEntities.filter { $0.get(HealthComponent.self)?.isAlive == false }
+        for box in deadBoxes {
+            if let node = box.get(TransformComponent.self)?.node {
+                node.run(.sequence([
+                    .scale(to: 0.1, duration: 0.15),
+                    .removeFromParent()
+                ]))
+            }
+        }
+        let deadBoxIDs = Set(deadBoxes.map { $0.id })
+        boxEntities.removeAll { deadBoxIDs.contains($0.id) }
         
         // 11. Special charge
         if let pl = playerEntity.get(PlayerComponent.self) {
@@ -627,6 +646,16 @@ class GameScene: SKScene {
             )
         }
         
+    }
+    
+    private func isPositionClear(_ pos: CGPoint, minDistance: CGFloat) -> Bool {
+        for box in boxEntities {
+            guard let boxNode = box.get(TransformComponent.self)?.node else { continue }
+            if pos.distance(to: boxNode.position) < minDistance {
+                return false
+            }
+        }
+        return true
     }
     
     // MARK: - Screen Shake
@@ -747,16 +776,25 @@ class GameScene: SKScene {
         guard let playerPos = playerEntity.get(TransformComponent.self)?.node.position else { return }
         
         let margin: CGFloat = 150
-        var pos: CGPoint
-        repeat {
+        let minBoxDistance: CGFloat = 100
+        var pos: CGPoint = .zero
+        
+        var isValid = false
+        var attempts = 0
+        
+        while !isValid && attempts < 100 {
+            attempts += 1
             let x = CGFloat.random(in: -worldSize.width  / 2 + margin ... worldSize.width  / 2 - margin)
             let y = CGFloat.random(in: -worldSize.height / 2 + margin ... worldSize.height / 2 - margin)
-            pos = CGPoint(x: x, y: y)
-        } while pos.distance(to: playerPos) < 300
+            let candidatePos = CGPoint(x: x, y: y)
+            
+            if candidatePos.distance(to: playerPos) >= 300 && isPositionClear(candidatePos, minDistance: minBoxDistance) {
+                pos = candidatePos
+                isValid = true
+            }
+        }
         
         ladderEntity = EntityFactory.makeLadder(at: pos, scene: self)
-        
-        // Passa o cameraNode — seta será filha da câmera
         arrowNode = EntityFactory.makeArrow(attachedTo: cameraNode)
     }
     
