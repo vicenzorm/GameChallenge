@@ -593,12 +593,16 @@ class GameScene: SKScene {
         
         // 11. Special charge
         if let pl = playerEntity.get(PlayerComponent.self) {
-            pl.killStreak += killedPts
-            if pl.killStreak >= PlayerComponent.weakKillsNeeded && !pl.specialReady {
-                pl.specialReady = true
+            // Carrega no kill normal, mas NÃO durante o especial
+            // (evita auto-recarregar ao matar inimigos com o próprio especial).
+            let isUsingSpecial = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
+            if !isUsingSpecial {
+                pl.killStreak += killedPts
+                if pl.killStreak >= PlayerComponent.weakKillsNeeded && !pl.specialReady {
+                    pl.specialReady = true
+                }
             }
             hud.updateSpecial(killStreak: pl.killStreak, isReady: pl.specialReady)
-            //hud.setButtonBActive(pl.specialReady)
         }
         
         

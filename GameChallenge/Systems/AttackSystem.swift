@@ -25,8 +25,8 @@ class AttackSystem {
         else { return }
         
         let origin = attackerTransform.node.position
-        let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
-        let damage = isSpecial ? attackComp.damage * 20  : attackComp.damage
+        let range  = isSpecial ? attackComp.range * 1.3 : attackComp.range
+        let damage = isSpecial ? attackComp.damage * 4  : attackComp.damage
         
         let contactRadius: CGFloat = 45
         
@@ -51,9 +51,6 @@ class AttackSystem {
                     let toEnemyVector = enemyTransform.node.position - origin
                     let distToCenter  = toEnemyVector.length
                     
-                    // --- O PULO DO GATO ---
-                    // A distância real é: distância entre centros MENOS o raio do inimigo.
-                    // Isso permite bater na "borda" de inimigos grandes como o Boss.
                     let effectiveDist = Swift.max(0, distToCenter - enemyRadius)
                     
                     // 2. Checa se está no alcance
