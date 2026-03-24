@@ -353,6 +353,7 @@ class HUD: SKNode {
             pauseOverlay = overlay
             addChild(overlay)
         } else {
+            stopVideoBackground()
             pauseOverlay?.removeFromParent()
             pauseOverlay = nil
         }
@@ -361,11 +362,6 @@ class HUD: SKNode {
     private func buildPauseOverlay() -> SKNode {
         let root = SKNode()
         root.zPosition = 200
-
-        let backgroundTexture = SKTexture(imageNamed: "pauseBackground")
-        let bg = SKSpriteNode(texture: backgroundTexture)
-        bg.zPosition = 0
-        root.addChild(bg)
 
         setupVideoBackground(videoName: "pause_video", rootNode: root, size: self.screenSize)
 

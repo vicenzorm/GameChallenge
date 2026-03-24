@@ -6,6 +6,7 @@
 //
 import SpriteKit
 import Foundation
+import AVFoundation
 
 class MenuScene: SKScene {
     
@@ -23,6 +24,10 @@ class MenuScene: SKScene {
     var zenithLabel: SKLabelNode!
     var secondaryLabel: SKLabelNode!
     
+    private var backgroundVideoNode: SKVideoNode?
+    private var videoPlayer: AVQueuePlayer?
+    private var videoLooper: AVPlayerLooper?
+    
     // MARK: - Touch Tracking
     private var trackedTouch: UITouch?
     private var trackedButtonNode: SKNode?
@@ -32,7 +37,7 @@ class MenuScene: SKScene {
     
     override init(size: CGSize) {
         super.init(size: size)
-        makeBackground(size: size)
+        setupVideoBackground(videoName: "menu_video", rootNode: self, size: self.size)
         makeButtons(size: size)
         makeTitle()
     }
@@ -42,11 +47,44 @@ class MenuScene: SKScene {
     }
     
     override func didMove(to view: SKView) {
+//        setupVideoBackground(videoName: "menu_video", rootNode: self, size: self.size)
+        
         AdManager.shared.loadAd()
         SoundManager.shared.playMusic(named: "menuSoundtrack.mp3")
     }
     
+    override func willMove(from view: SKView) {
+        super.willMove(from: view)
+
+        stopVideoBackground()
+    }
+    
     // MARK: - Setup
+    
+    private func setupVideoBackground(videoName: String, rootNode: SKNode, size: CGSize) {
+        guard let videoURL = Bundle.main.url(forResource: videoName, withExtension: "mp4") else {
+            print("Erro: Não foi possível carregar \(videoName).mp4.")
+            return
+        }
+        
+        let playerItem = AVPlayerItem(url: videoURL)
+        let queuePlayer = AVQueuePlayer(playerItem: playerItem)
+        
+        videoLooper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+        videoPlayer = queuePlayer
+        
+        let videoNode = SKVideoNode(avPlayer: queuePlayer)
+        
+        videoNode.size = size
+        videoNode.position = CGPoint(x: size.width/2, y: size.height/2)
+        
+        videoNode.zPosition = -100
+        
+        backgroundVideoNode = videoNode
+        rootNode.addChild(videoNode)
+        
+        videoNode.play()
+    }
     
     func makeTitle() {
         zenithLabel = SKLabelNode(text: "zenith")
@@ -64,16 +102,16 @@ class MenuScene: SKScene {
         addChild(secondaryLabel)
     }
     
-    func makeBackground(size: CGSize) {
-        let backgroundTexture = SKTexture(imageNamed: "menuBackground")
-        backgroundTexture.filteringMode = .nearest
-        background = SKSpriteNode(texture: backgroundTexture)
-        background.size = size
-        background.position = CGPoint(x: size.width/2, y: size.height/2)
-        background.zPosition = -1
-        background.name = "background"
-        addChild(background)
-    }
+//    func makeBackground(size: CGSize) {
+//        let backgroundTexture = SKTexture(imageNamed: "menuBackground")
+//        backgroundTexture.filteringMode = .nearest
+//        background = SKSpriteNode(texture: backgroundTexture)
+//        background.size = size
+//        background.position = CGPoint(x: size.width/2, y: size.height/2)
+//        background.zPosition = -1
+//        background.name = "background"
+//        addChild(background)
+//    }
     
     func makeButtons(size: CGSize) {
         let buttonsWSize = 160
@@ -162,8 +200,8 @@ class MenuScene: SKScene {
         
         switch name {
         case "playButton",       "playLabel",
-             "leaderboardButton", "leaderboardLabel",
-             "settingsButton",    "settingsLabel":
+            "leaderboardButton", "leaderboardLabel",
+            "settingsButton",    "settingsLabel":
             trackedTouch       = touch
             trackedButtonNode  = buttonNode
             trackedButtonName  = name
@@ -219,7 +257,7 @@ class MenuScene: SKScene {
             let settingsScene = SettingsScene(size: self.size)
             settingsScene.scaleMode = self.scaleMode
             self.view?.presentScene(settingsScene,
-                transition: .moveIn(with: .right, duration: 0.5))
+                                    transition: .moveIn(with: .right, duration: 0.5))
             
         default:
             break
@@ -246,4 +284,16 @@ class MenuScene: SKScene {
         trackedButtonNode = nil
         trackedButtonName = nil
     }
+    
+    private func stopVideoBackground() {
+            backgroundVideoNode?.pause()
+            videoLooper?.disableLooping()
+            videoPlayer?.removeAllItems()
+            
+            backgroundVideoNode?.removeFromParent()
+            
+            backgroundVideoNode = nil
+            videoPlayer = nil
+            videoLooper = nil
+        }
 }
