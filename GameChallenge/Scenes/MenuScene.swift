@@ -20,11 +20,15 @@ class MenuScene: SKScene {
     var settingsButton: SKSpriteNode!
     var settingsLabel: SKSpriteNode!
     
+    var zenithLabel: SKLabelNode!
+    var secondaryLabel: SKLabelNode!
+    
     override init(size: CGSize) {
         super.init(size: size)
         
         makeBackground(size: size)
         makeButtons(size: size)
+        makeTitle()
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -33,6 +37,23 @@ class MenuScene: SKScene {
     
     override func didMove(to view: SKView) {
         AdManager.shared.loadAd()
+    }
+    
+    func makeTitle() {
+        zenithLabel = SKLabelNode(text:"zenith")
+        zenithLabel.fontName = AppManager.shared.appFont
+        zenithLabel.fontSize = 220
+        zenithLabel.color = .white
+        zenithLabel.position = CGPoint(x: size.width/2 + 130, y: size.height/2 - 90)
+        addChild(zenithLabel)
+        
+        secondaryLabel = SKLabelNode(text: "the endless tower")
+        secondaryLabel.fontName = AppManager.shared.appFont
+        secondaryLabel.fontSize = 37
+        secondaryLabel.color = .white
+        secondaryLabel.position = CGPoint(x: size.width/2 + 28, y: size.height/2 + 37)
+        addChild(secondaryLabel)
+        
     }
     
     func makeBackground(size: CGSize) {
