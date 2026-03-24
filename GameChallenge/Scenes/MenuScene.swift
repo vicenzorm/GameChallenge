@@ -43,6 +43,7 @@ class MenuScene: SKScene {
     
     override func didMove(to view: SKView) {
         AdManager.shared.loadAd()
+        SoundManager.shared.playMusic(named: "menuSoundtrack.mp3")
     }
     
     // MARK: - Setup

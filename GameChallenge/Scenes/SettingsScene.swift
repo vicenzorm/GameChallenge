@@ -138,6 +138,7 @@ class SettingsScene: SKScene {
                     AppManager.shared.toggleSound()
                     self.animatePressedToggle(toggle: self.musicSwitch,
                                               isOn: AppManager.shared.soundEnabled)
+                    SoundManager.shared.applyMusicSettings()
                 }
 
             case "sFXSwitch":

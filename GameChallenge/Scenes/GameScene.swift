@@ -186,6 +186,7 @@ class GameScene: SKScene {
         setupWaveCallbacks()
         setupCoinCallbacks()
         waveSystem.startNextWave(sceneSize: worldSize)
+        SoundManager.shared.playMusic(named: "gameMusic.mp3")
     }
     
     
@@ -716,6 +717,8 @@ class GameScene: SKScene {
         }
         enemyEntities.removeAll()
         
+        SoundManager.shared.playMusic(named: "levelUpMusic.mp3", loop: false)
+        
         guard let view = self.view else { return }
         
         let cp = CutscenePlayer()
@@ -725,6 +728,8 @@ class GameScene: SKScene {
             self.cutscenePlayer          = nil
             self.isPausedByPlayer        = false
             self.movementJoystick.isHidden = false
+            // vai tocar de novo ao inves de loop?
+            SoundManager.shared.playMusic(named: "gameMusic.mp3")
             self.waveSystem.startNextWave(sceneSize: self.worldSize)
         }
     }
@@ -781,10 +786,10 @@ class GameScene: SKScene {
     private func triggerGameOver() {
         guard !isPausedByPlayer else { return }
         isPausedByPlayer = true
-        let currentFloor = waveSystem.currentWave
-        GameCenterManager.shared.submitScore(floor: (currentFloor))
+        GameCenterManager.shared.submitScore(floor: waveSystem.currentWave)
         movementJoystick.isHidden = true
         movementJoystick.isUserInteractionEnabled = false
+        SoundManager.shared.playMusic(named: "gameOverMusic.mp3", loop: false)
         hud.showGameOver()
     }
     
@@ -896,6 +901,9 @@ class GameScene: SKScene {
             
             // remove game over
             self.hud.hideGameOver()
+            
+            SoundManager.shared.playMusic(named: "gameMusic.mp3")
+                self.isPausedByPlayer = false
             
             // retoma jogo
             

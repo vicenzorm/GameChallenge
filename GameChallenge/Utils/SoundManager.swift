@@ -35,6 +35,13 @@ final class SoundManager {
     let specialPickup = SKAction.playSoundFileNamed("specialPickup.wav", waitForCompletion: false)
     let killAll = SKAction.playSoundFileNamed( "killAll.wav", waitForCompletion: false)
     
+    let musicMenu = SKAction.playSoundFileNamed( "menuSoundtrack.mp3", waitForCompletion: false)
+    let gameMusic = SKAction.playSoundFileNamed( "gameMusic.mp3", waitForCompletion: false)
+    let gameOverMusic = SKAction.playSoundFileNamed( "gameOverMusic.mp3", waitForCompletion: false)
+    let levelUpMusic = SKAction.playSoundFileNamed( "levelUpMusic.mp3", waitForCompletion: false)
+    
+    // Adicione esta propriedade na classe:
+    private var currentMusicURL: URL?
     
     private init() {}
 
@@ -45,23 +52,51 @@ final class SoundManager {
     }
 
     // MARK: - Music
-    func playMusic(name: String, volume: Float, loop: Bool = true) {
-
+    func playMusic(named fileName: String, volume: Float = 0.5, loop: Bool = true) {
         guard AppManager.shared.soundEnabled else { return }
 
-        guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else {
-            print("music not found: \(name)")
+        let url: URL?
+        if let dotIndex = fileName.lastIndex(of: ".") {
+            let name = String(fileName[fileName.startIndex..<dotIndex])
+            let ext  = String(fileName[fileName.index(after: dotIndex)...])
+            url = Bundle.main.url(forResource: name, withExtension: ext)
+        } else {
+            url = Bundle.main.url(forResource: fileName, withExtension: "mp3")
+        }
+
+        guard let url else {
+            print("⚠️ SoundManager: música não encontrada — \(fileName)")
             return
         }
 
-        do {
-            musicPlayer = try AVAudioPlayer(contentsOf: url)
-            musicPlayer?.volume = volume
-            musicPlayer?.numberOfLoops = loop ? -1 : 0
-            musicPlayer?.prepareToPlay()
+        guard currentMusicURL != url else { return }
+
+        // Fade out da música atual, depois toca a nova
+        let fadeDuration: TimeInterval = musicPlayer?.isPlaying == true ? 0.4 : 0.0
+        musicPlayer?.setVolume(0, fadeDuration: fadeDuration)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDuration) { [weak self] in
+            guard let self else { return }
+            self.musicPlayer?.stop()
+            self.currentMusicURL = url
+            do {
+                self.musicPlayer = try AVAudioPlayer(contentsOf: url)
+                self.musicPlayer?.volume = 0
+                self.musicPlayer?.numberOfLoops = loop ? -1 : 0
+                self.musicPlayer?.prepareToPlay()
+                self.musicPlayer?.play()
+                self.musicPlayer?.setVolume(volume, fadeDuration: 0.8)
+            } catch {
+                print("⚠️ SoundManager: erro ao tocar \(fileName) — \(error)")
+            }
+        }
+    }
+    
+    func applyMusicSettings() {
+        if AppManager.shared.soundEnabled {
             musicPlayer?.play()
-        } catch {
-            print(error)
+        } else {
+            musicPlayer?.pause()
         }
     }
 
