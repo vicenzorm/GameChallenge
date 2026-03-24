@@ -12,6 +12,8 @@ import Foundation
 class WaveSystem {
     private(set) var currentWave: Int = 0
     private(set) var isSpawning: Bool = false
+    private(set) var totalEnemiesInWave: Int = 0
+    private(set) var enemiesKilled:      Int = 0
 
     private var spawnTimer:        TimeInterval = 0
     private var currentSpawnQueue: [EnemyComponent.EnemyType] = []
@@ -133,26 +135,23 @@ class WaveSystem {
         waveCleared  = false
         let config   = WaveConfig.config(forWave: currentWave)
 
-        // Monta a fila de spawn na ordem: fraco → normal → forte → atirador
-        // O shuffle garante que a ordem seja aleatória durante o spawn.
         var queue: [EnemyComponent.EnemyType] = []
         queue += Array(repeating: .weak,    count: config.weak)
         queue += Array(repeating: .normal,  count: config.normal)
         queue += Array(repeating: .strong,  count: config.strong)
         queue += Array(repeating: .shooter, count: config.shooter)
         queue.shuffle()
-
-        // Boss sempre aparece no FINAL da fila, após todos os outros.
-        // Remova essa linha se não quiser boss em toda wave.
         queue.append(.boss)
 
-        currentSpawnQueue = queue
-        spawnTimer        = 0
-        isSpawning        = true
+        currentSpawnQueue    = queue
+        totalEnemiesInWave   = queue.count   // ← total real da wave, sempre atualizado
+        enemiesKilled        = 0             // ← reseta o contador
+        spawnTimer           = 0
+        isSpawning           = true
 
         onWaveStart?(currentWave)
     }
-
+    
     // ═══════════════════════════════════════════════════════════════════
     // MARK: - update
     // ═══════════════════════════════════════════════════════════════════
@@ -198,5 +197,15 @@ class WaveSystem {
                           y: CGFloat.random(in: -hh...hh))
         } while pos.distance(to: playerPos) < 200  // ← distância mínima do player ao spawnar
         return pos
+    }
+    
+    func registerEnemyKilled() {
+        enemiesKilled = Swift.min(enemiesKilled + 1, totalEnemiesInWave)
+    }
+
+    // Propriedade calculada para o progresso (0.0 → 1.0)
+    var waveProgress: CGFloat {
+        guard totalEnemiesInWave > 0 else { return 0 }
+        return CGFloat(enemiesKilled) / CGFloat(totalEnemiesInWave)
     }
 }

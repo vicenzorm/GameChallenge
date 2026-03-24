@@ -1,15 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "emptyBar 1.png",
+      "filename" : "waveBarFull.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "waveBarFull 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "waveBarFull 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

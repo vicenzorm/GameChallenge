@@ -11,6 +11,9 @@ class CollisionSystem {
     // Callback chamado pelo GameScene para acionar o shake + flash
     // Atribuído em GameScene: collisionSystem.onPlayerHit = { [weak self] node in ... }
     var onPlayerHit: ((SKNode) -> Void)?
+    var onPlayerHealed: (() -> Void)?
+    var onPlayerSpecialCharged: (() -> Void)?
+    var onKillAllUsed: (() -> Void)?
 
     // Cooldown para evitar que shake e flash disparem todo frame durante colisão contínua
     private var hitFeedbackCooldown: TimeInterval = 0
@@ -97,16 +100,19 @@ class CollisionSystem {
             SoundManager.shared.play(SoundManager.shared.healthPickup, on: playerNode)
             if let hp = player.get(HealthComponent.self) {
                 hp.current = min(hp.max, hp.current + 50)
+                onPlayerHealed?()
             }
         case .specialCharge:
             SoundManager.shared.play(SoundManager.shared.specialPickup, on: playerNode)
             if let pl = player.get(PlayerComponent.self) {
                 pl.killStreak   = max(pl.killStreak, PlayerComponent.weakKillsNeeded)
                 pl.specialReady = true
+                onPlayerSpecialCharged?()   // ← adicione aqui
             }
         case .killAll:
             SoundManager.shared.play(SoundManager.shared.killAll, on: playerNode)
             scene.clearEnemiesAroundPlayer()
+            onKillAllUsed?()   
         }
 
         item.get(TransformComponent.self)?.node.removeFromParent()
