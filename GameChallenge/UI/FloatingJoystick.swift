@@ -14,6 +14,8 @@ class FloatingJoystick: SKNode {
     private let radius: CGFloat = 50
 
     private var trackingTouch: UITouch?
+    private var lastEdgeSegment: Int = -1
+    
     var velocity: CGPoint = .zero
     var isTouching = false
 
@@ -64,6 +66,7 @@ class FloatingJoystick: SKNode {
         baseNode.run(.fadeAlpha(to: 1.0, duration: 0.1))
         stickNode.run(.fadeAlpha(to: 1.0, duration: 0.1))
         
+        vibrate(with: .light)
         updateStickPosition(with: location)
     }
 
@@ -96,6 +99,14 @@ class FloatingJoystick: SKNode {
                 y: baseNode.position.y + sin(angle) * radius
             )
             velocity = CGPoint(x: cos(angle), y: sin(angle))
+            
+            let degrees = (angle * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+            let segment = Int(degrees / 45)
+            
+            if segment != lastEdgeSegment {
+                vibrate(with: .light)
+                lastEdgeSegment = segment
+            }
         }
 
         // Normalização
@@ -110,7 +121,7 @@ class FloatingJoystick: SKNode {
         trackingTouch = nil
         isTouching = false
         velocity = .zero
-        
+        lastEdgeSegment = -1
         // Animação suave para desaparecer
         baseNode.removeAllActions()
         stickNode.removeAllActions()
