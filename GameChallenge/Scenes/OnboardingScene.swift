@@ -6,21 +6,21 @@
 //
 
 import SpriteKit
+import AVFoundation
 
 class OnboardingScene: SKScene {
     
     // ── Callback para avisar o SwiftUI que terminou ───────────────────
-        var onFinished: (() -> Void)?
+    var onFinished: (() -> Void)?
 
-        // Adicione esse init para o SpriteView conseguir instanciar sem parâmetros
-        override init() {
-            super.init(size: UIScreen.main.bounds.size)
-            scaleMode = .aspectFill
-        }
+    override init() {
+        super.init(size: UIScreen.main.bounds.size)
+        scaleMode = .aspectFill
+    }
 
-        required init?(coder aDecoder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     // ── Conteúdo das telas ────────────────────────────────────────────
     private struct OnboardingPage {
@@ -46,35 +46,49 @@ class OnboardingScene: SKScene {
     // ── Estado ────────────────────────────────────────────────────────
     private var currentPageIndex = 0
     private var isTyping         = false
-    private var typingAction:    SKAction?
 
     // ── Nodes ─────────────────────────────────────────────────────────
+    private let contentNode      = SKNode()
     private var backgroundNode:  SKSpriteNode?
     private var textBoxNode:     SKSpriteNode?
     private var textLabel:       SKLabelNode?
     private var tapHintLabel:    SKLabelNode?
 
     // ── Configurações ─────────────────────────────────────────────────
-    private let fontName        = "PressStart2P-Regular"
+    private let fontName         = "PressStart2P-Regular"
     private let fontSize:        CGFloat = 11
+    private let lineSpacing:     CGFloat = 8
     private let textPadding:     CGFloat = 24
-    private let typingInterval:  TimeInterval = 0.04   // ← velocidade de digitação
-    private let typeSound        = SKAction.playSoundFileNamed("typing.wav", waitForCompletion: false)
-
-    // ── Música ────────────────────────────────────────────────────────
-    // Para ativar: descomente a linha abaixo e implemente via SoundManager
-    // SoundManager.shared.playMusic(name: "onboarding_soundtrack", volume: 0.6)
+    private let typingInterval:  TimeInterval = 0.05 // Levemente mais lento para legibilidade
+    
+    private var typingAudioPlayer: AVAudioPlayer?
 
     // MARK: - Lifecycle
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
-
-        // ── Música de fundo ───────────────────────────────────────────
-        // Descomente para ativar:
-        // SoundManager.shared.playMusic(name: "onboarding_soundtrack", volume: 0.6)
-
+        addChild(contentNode)
+        
+        setupTypingSound()
         showPage(index: 0, animated: false)
+    }
+
+    // MARK: - Configuração de Som
+
+    private func setupTypingSound() {
+        // Garante que o áudio não tenha atraso e misture com outros sons
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+        try? AVAudioSession.sharedInstance().setActive(true)
+
+        if let url = Bundle.main.url(forResource: "typing", withExtension: "mp3") {
+            do {
+                typingAudioPlayer = try AVAudioPlayer(contentsOf: url)
+                typingAudioPlayer?.volume = 0.12 // Volume baixo para não incomodar
+                typingAudioPlayer?.prepareToPlay()
+            } catch {
+                print("Erro ao carregar áudio: \(error)")
+            }
+        }
     }
 
     // MARK: - Página
@@ -89,11 +103,10 @@ class OnboardingScene: SKScene {
         let page = pages[index]
 
         if animated {
-            // Fade out da tela atual, depois monta a nova
-            let fadeOut = SKAction.fadeOut(withDuration: 0.5)
-            run(fadeOut) { [weak self] in
+            let fadeOut = SKAction.fadeOut(withDuration: 0.4)
+            contentNode.run(fadeOut) { [weak self] in
                 self?.buildPage(page)
-                self?.run(.fadeIn(withDuration: 0.5)) { [weak self] in
+                self?.contentNode.run(.fadeIn(withDuration: 0.4)) { [weak self] in
                     self?.startTyping()
                 }
             }
@@ -104,125 +117,130 @@ class OnboardingScene: SKScene {
     }
 
     private func buildPage(_ page: OnboardingPage) {
-        // Remove tudo anterior
-        removeAllChildren()
+        contentNode.removeAllChildren()
 
-        // ── Background ────────────────────────────────────────────────
+        // ── Background
         let bg = SKSpriteNode(imageNamed: page.backgroundAsset)
         bg.size      = size
         bg.position  = .zero
         bg.zPosition = 0
-        addChild(bg)
+        contentNode.addChild(bg)
         backgroundNode = bg
 
-        // ── Caixa de texto ────────────────────────────────────────────
-        // Calcula largura disponível respeitando padding lateral
+        // ── Caixa de texto
         let boxWidth = size.width - textPadding * 2
 
-        // Label com numberOfLines para quebra automática
         let label = SKLabelNode(fontNamed: fontName)
-        label.fontSize              = fontSize
-        label.fontColor             = .white
         label.numberOfLines         = 0
-        label.preferredMaxLayoutWidth = boxWidth - textPadding * 2
+        label.preferredMaxLayoutWidth = boxWidth - (textPadding * 2)
         label.horizontalAlignmentMode = .left
         label.verticalAlignmentMode   = .top
-        label.text                  = ""   // começa vazio — será preenchido pelo typewriter
         label.zPosition             = 2
         textLabel = label
 
-        // Altura da caixa baseada no texto completo (para reservar espaço certo)
+        // Medir altura do texto completo com o espaçamento de linha para ajustar a caixa
         let fullLabel = SKLabelNode(fontNamed: fontName)
-        fullLabel.fontSize              = fontSize
-        fullLabel.numberOfLines         = 0
-        fullLabel.preferredMaxLayoutWidth = boxWidth - textPadding * 2
-        fullLabel.text                  = page.text
-        let textHeight = fullLabel.frame.height
-
-        let boxHeight = textHeight + textPadding * 2
-
-        // Posição: alinhada ao fundo com padding
+        fullLabel.numberOfLines = 0
+        fullLabel.preferredMaxLayoutWidth = label.preferredMaxLayoutWidth
+        applyAttributedText(page.text, to: fullLabel)
+        
+        let boxHeight = fullLabel.frame.height + (textPadding * 2.5)
         let boxY = -size.height / 2 + textPadding + boxHeight / 2
 
-        // Imagem de fundo da caixa de texto
         let textBox = SKSpriteNode(imageNamed: "textbox_bg")
         textBox.size     = CGSize(width: boxWidth, height: boxHeight)
         textBox.position = CGPoint(x: 0, y: boxY)
         textBox.zPosition = 1
-        addChild(textBox)
+        contentNode.addChild(textBox)
         textBoxNode = textBox
 
-        // Posiciona o label dentro da caixa
         label.position = CGPoint(
             x: -boxWidth / 2 + textPadding,
             y:  boxHeight / 2 - textPadding
         )
         textBox.addChild(label)
 
-        // ── Hint "tap to continue" ────────────────────────────────────
+        // ── Hint
         let hint = SKLabelNode(fontNamed: fontName)
-        hint.fontSize  = 8
-        hint.fontColor = UIColor(white: 1, alpha: 0.6)
-        hint.text      = "tap to continue"
+        hint.fontSize  = 7
+        hint.fontColor = UIColor(white: 1, alpha: 0.5)
+        hint.text      = "TAP TO CONTINUE"
         hint.horizontalAlignmentMode = .right
-        hint.position  = CGPoint(x: boxWidth / 2 - textPadding, y: -boxHeight / 2 + 10)
+        hint.position  = CGPoint(x: boxWidth / 2 - textPadding, y: -boxHeight / 2 + 12)
         hint.zPosition = 2
         hint.alpha     = 0
         textBox.addChild(hint)
         tapHintLabel = hint
+    }
 
-        alpha = 1
+    // MARK: - Helpers de Texto
+
+    private func applyAttributedText(_ text: String, to label: SKLabelNode) {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineSpacing = lineSpacing
+        paragraphStyle.alignment = .left
+        paragraphStyle.lineBreakMode = .byWordWrapping // Evita o efeito de blocos "pulando"
+
+        let font = UIFont(name: fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        label.attributedText = NSAttributedString(string: text, attributes: attributes)
     }
 
     // MARK: - Typewriter
 
     private func startTyping() {
         guard let label = textLabel else { return }
-        let page = pages[currentPageIndex]
-        let fullText = page.text
+        let fullText = pages[currentPageIndex].text
 
         isTyping = true
-        label.text = ""
-
-        var charIndex = 0
+        var currentString = ""
         let chars = Array(fullText)
+        var charIndex = 0
 
-        // Sequência: a cada `typingInterval` adiciona um caractere + toca som
-        let typeStep = SKAction.run { [weak self, weak label] in
-            guard let self, let label else { return }
-            guard charIndex < chars.count else { return }
-            label.text = (label.text ?? "") + String(chars[charIndex])
-            charIndex += 1
-
-            // Som de digitação (não toca para espaços para não ficar repetitivo)
-            if chars[charIndex > 0 ? charIndex - 1 : 0] != " " {
-                self.run(self.typeSound)
+        let typeStep = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            if charIndex < chars.count {
+                let char = chars[charIndex]
+                currentString.append(char)
+                self.applyAttributedText(currentString, to: label)
+                
+                // Som de digitação (apenas se não for espaço)
+                if char != " " {
+                    self.typingAudioPlayer?.stop()
+                    self.typingAudioPlayer?.currentTime = 0
+                    self.typingAudioPlayer?.play()
+                }
+                charIndex += 1
             }
         }
 
-        let wait     = SKAction.wait(forDuration: typingInterval)
+        let wait = SKAction.wait(forDuration: typingInterval)
         let sequence = SKAction.sequence([typeStep, wait])
-        let repeat_  = SKAction.repeat(sequence, count: chars.count)
+        let repeatAction = SKAction.repeat(sequence, count: chars.count)
 
-        let finish = SKAction.run { [weak self] in
+        label.run(.sequence([repeatAction, .run { [weak self] in
             self?.isTyping = false
             self?.showTapHint()
-        }
-
-        run(.sequence([repeat_, finish]), withKey: "typing")
+        }]), withKey: "typingAction")
     }
 
     private func skipTyping() {
-        removeAction(forKey: "typing")
+        textLabel?.removeAction(forKey: "typingAction")
         isTyping = false
-        textLabel?.text = pages[currentPageIndex].text
+        applyAttributedText(pages[currentPageIndex].text, to: textLabel!)
         showTapHint()
     }
 
     private func showTapHint() {
         tapHintLabel?.run(.repeatForever(.sequence([
-            .fadeAlpha(to: 0.2, duration: 0.6),
-            .fadeAlpha(to: 0.8, duration: 0.6)
+            .fadeAlpha(to: 0.1, duration: 0.6),
+            .fadeAlpha(to: 0.7, duration: 0.6)
         ])))
     }
 
@@ -241,27 +259,23 @@ class OnboardingScene: SKScene {
         }
     }
 
-//    private func goToGame() {
-//        // ── Para música do onboarding ─────────────────────────────────
-//        // SoundManager.shared.stopMusic()
-//
-//        let game = MenuScene(size: size)   // ← troque por GameScene se quiser ir direto
-//        game.scaleMode = scaleMode
-//        view?.presentScene(game, transition: .fade(withDuration: 0.8))
-//    }
+    private func goToGame() {
+        // Desabilita interação para evitar múltiplos cliques na transição
+        self.isUserInteractionEnabled = false
 
-    // MARK: - Touch
+        // Cortina preta para transição final
+        let blackOverlay = SKSpriteNode(color: .black, size: self.size)
+        blackOverlay.zPosition = 100
+        blackOverlay.alpha = 0
+        addChild(blackOverlay)
+
+        blackOverlay.run(.fadeIn(withDuration: 1.2)) { [weak self] in
+            // Chama a transição do SwiftUI após o fade completo
+            self?.onFinished?()
+        }
+    }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         advance()
     }
-    
-    private func goToGame() {
-            // ── Para música do onboarding ─────────────────────────────────
-            // SoundManager.shared.stopMusic()
-
-            // Avisa o SwiftUI para trocar de tela
-            onFinished?()
-        }
-
 }
