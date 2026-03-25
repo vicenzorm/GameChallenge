@@ -79,7 +79,20 @@ class AttackSystem {
                         SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
                     } else if enemy.get(BoxComponent.self) != nil {
                         health.healthBarBackground?.run(.fadeIn(withDuration: 0.2))
-                        SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+                        if enemy.get(BoxComponent.self)?.obstacleType == .firecamp {
+                            SoundManager.shared.play(SoundManager.shared.firePutOut, on: enemyTransform.node)
+                        }
+                            else if enemy.get(BoxComponent.self)?.obstacleType == .treasure {
+                                SoundManager.shared.play(SoundManager.shared.hitBoxComponent, on: enemyTransform.node)
+                                SoundManager.shared.play(SoundManager.shared.clinkingCoins, on: enemyTransform.node)
+                            }
+                        else if enemy.get(BoxComponent.self)?.obstacleType == .vase {
+                            SoundManager.shared.play(SoundManager.shared.vaseBreak, on: enemyTransform.node)
+                        }
+                        
+                        else {
+                            SoundManager.shared.play(SoundManager.shared.hitBoxComponent, on: enemyTransform.node)
+                        }
                     }
                 }
         

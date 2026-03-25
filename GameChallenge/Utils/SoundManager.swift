@@ -15,6 +15,12 @@ final class SoundManager {
 
     let hit1 = SKAction.playSoundFileNamed("hit1.wav", waitForCompletion: false)
     let hit2 = SKAction.playSoundFileNamed("hit2.wav", waitForCompletion: false)
+    let flameHit = SKAction.playSoundFileNamed( "flameHit.wav", waitForCompletion: false)
+    
+    let hitBoxComponent = SKAction.playSoundFileNamed("hitWood.wav",waitForCompletion: false)
+    let firePutOut = SKAction.playSoundFileNamed("firePutOut.wav", waitForCompletion: false)
+    let clinkingCoins = SKAction.playSoundFileNamed("clinkingCoins.wav", waitForCompletion: false)
+    let vaseBreak = SKAction.playSoundFileNamed("vaseBreak", waitForCompletion: false)
 
     let attack1 = SKAction.playSoundFileNamed("attack1.wav", waitForCompletion: false)
     let attack2 = SKAction.playSoundFileNamed("attack2.mp3", waitForCompletion: false)
