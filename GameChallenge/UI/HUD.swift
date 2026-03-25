@@ -330,6 +330,14 @@ class HUD: SKNode {
         waveLabel.text = "Floor \(wave)"
         countdownLabel.text = ""
         waveLabel.run(.sequence([.scale(to: 1.4, duration: 0.12), .scale(to: 1.0, duration: 0.12)]))
+        
+        if wave == 2{
+            GameCenterManager.shared.reportAchievement(id: "first_floor", percent: 100.0)
+        }else if wave == 5{
+            GameCenterManager.shared.reportAchievement(id: "fifth_floor", percent: 100.0)
+        }else if wave == 10{
+            GameCenterManager.shared.reportAchievement(id: "tenth_floor", percent: 100.0)
+        }
     }
     
     func showCountdown(_ seconds: Int) {
