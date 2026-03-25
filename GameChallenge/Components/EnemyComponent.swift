@@ -48,7 +48,7 @@ class EnemyComponent: Component {
             case .normal:  return 34
             case .strong:  return 50
             case .shooter: return 28
-            case .boss:    return 160
+            case .boss:    return 50
             }
         }
 

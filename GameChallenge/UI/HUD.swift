@@ -9,6 +9,7 @@
 // Landscape layout. All elements anchored to camera space.
 
 import SpriteKit
+import AVFoundation
 
 class HUD: SKNode {
     
@@ -45,6 +46,10 @@ class HUD: SKNode {
     
     private let specialRingCrop: SKCropNode
     private let specialRingMask: SKSpriteNode
+    
+    private var backgroundVideoNode: SKVideoNode?
+    private var videoPlayer: AVQueuePlayer?
+    private var videoLooper: AVPlayerLooper?
     
 
     init(screenSize: CGSize) {
@@ -250,6 +255,40 @@ class HUD: SKNode {
         }
     }
     
+    private func setupVideoBackground(videoName: String, rootNode: SKNode, size: CGSize) {
+        guard let videoURL = Bundle.main.url(forResource: videoName, withExtension: "mp4") else {
+            print("⚠️ Erro: Não foi possível carregar \(videoName).mp4")
+            return
+        }
+        
+        let playerItem = AVPlayerItem(url: videoURL)
+        let queuePlayer = AVQueuePlayer(playerItem: playerItem)
+        
+        videoLooper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+        videoPlayer = queuePlayer
+        
+        let videoNode = SKVideoNode(avPlayer: queuePlayer)
+        videoNode.size = size
+        videoNode.zPosition = 0
+        
+        backgroundVideoNode = videoNode
+        rootNode.addChild(videoNode)
+        
+        videoNode.play()
+    }
+    
+    private func stopVideoBackground() {
+        backgroundVideoNode?.pause()
+        videoLooper?.disableLooping()
+        videoPlayer?.removeAllItems()
+        
+        backgroundVideoNode?.removeFromParent()
+        
+        backgroundVideoNode = nil
+        videoPlayer = nil
+        videoLooper = nil
+    }
+    
     // Sobrescreva updateSpecial para também atualizar o anel:
     func updateSpecial(killStreak: Int, isReady: Bool) {
         let ratio = CGFloat(Swift.min(killStreak, PlayerComponent.weakKillsNeeded))
@@ -318,30 +357,31 @@ class HUD: SKNode {
             pauseOverlay = overlay
             addChild(overlay)
         } else {
+            stopVideoBackground()
             pauseOverlay?.removeFromParent()
             pauseOverlay = nil
         }
     }
     
     private func buildPauseOverlay() -> SKNode {
-        let root = SKNode(); root.zPosition = 200
-        
-        let backgroundTexture = SKTexture(imageNamed: "pauseBackground")
-        let bg = SKSpriteNode(texture: backgroundTexture)
-        bg.zPosition = 0
-        root.addChild(bg)
-        
+        let root = SKNode()
+        root.zPosition = 200
+
+        setupVideoBackground(videoName: "pause_video", rootNode: root, size: self.screenSize)
+
         let title = SKLabelNode(text: NSLocalizedString("pause_title", comment: ""))
-        title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
-        title.fontColor = .white;
-        title.position = CGPoint(x: -286.25, y: 83.5)
+        title.fontName = "PressStart2P-Regular"
+        title.fontSize = 22.36
+        title.fontColor = .white
+        title.horizontalAlignmentMode = .left
+        title.position = CGPoint(x: -341.25, y: 83.5)
         title.zPosition = 1
         root.addChild(title)
-        
-        
+
         let title2 = SKLabelNode(text: waveLabel.text)
-        title2.fontName = "PressStart2P-Regular"; title2.fontSize = 67
-        title2.fontColor = .white;
+        title2.fontName = "PressStart2P-Regular"
+        title2.fontSize = 67
+        title2.fontColor = .white
         title2.position = CGPoint(x: -341.25, y: 0)
         title2.zPosition = 1
         title2.horizontalAlignmentMode = .left
@@ -351,12 +391,14 @@ class HUD: SKNode {
             text: "pause_resume",
             pos: CGPoint(x: -262.25, y: -53.75),
             name: "resumeButton"
-        ))
-        root.addChild(makeOverlayButton(
+        )
+        let exitBtn = makeOverlayButton(
             text: "pause_exit",
-            pos: CGPoint(x: -78.25, y: -53.75),
+            pos: CGPoint(x: leftAnchor + buttonW + buttonSpacing + buttonW / 2, y: -53.75),
             name: "menuFromPause"
-        ))
+        )
+        root.addChild(resumeBtn)
+        root.addChild(exitBtn)
         return root
     }
     

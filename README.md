@@ -75,7 +75,7 @@ Use o framework de **Testing** padrão da Apple para escrever casos de teste.
 Os PRs devem ser pequenos, objetivos e com descrição clara do que está sendo alterado.
 
 **Antes de abrir um PR:**
-1. Certifique-se de que sua branch está atualizada com `dev`
+Certifique-se de que sua branch está atualizada com `dev`
 
 Revise seu código localmente (verifique memory leaks com texturas do SpriteKit!).
 

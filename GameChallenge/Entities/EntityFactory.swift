@@ -222,6 +222,16 @@ class EntityFactory {
                 dmgTextures:  dmgTextures,
                 dieTextures:  dieTextures
             ))
+            
+//            let debugCircle = SKShapeNode(circleOfRadius: type.radius)
+//                    debugCircle.strokeColor = .red
+//                    debugCircle.fillColor = .red.withAlphaComponent(0.2) // Um vermelho clarinho pra ver a área
+//                    debugCircle.lineWidth = 4
+//                    debugCircle.zPosition = 1000 // Joga pro topo de tudo no mundo
+//                    debugCircle.name = "debugHitbox"
+//                    node.addChild(debugCircle)
+            
+            
             return entity  // ← retorno antecipado, sai do switch
         case .normal:
             return makeYellowSkeletonEnemy(at: position, scene: scene)

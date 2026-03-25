@@ -25,46 +25,63 @@ class AttackSystem {
         else { return }
         
         let origin = attackerTransform.node.position
-        let range  = isSpecial ? attackComp.range * 2.2 : attackComp.range
-        let damage = isSpecial ? attackComp.damage * 20  : attackComp.damage
+        let range  = isSpecial ? attackComp.range * 1 : attackComp.range
+        let damage = isSpecial ? attackComp.damage * 4  : attackComp.damage
         
-        let contactRadius: CGFloat = 38
+        let contactRadius: CGFloat = 45
         
         var didHitAny = false
         
         for enemy in enemies {
-            guard
-                let enemyTransform = enemy.get(TransformComponent.self),
-                let health         = enemy.get(HealthComponent.self)
-            else { continue }
-            
-            let toEnemy = enemyTransform.node.position - origin
-            let dist    = toEnemy.length
-            
-            guard dist <= range else { continue }
-            
-            let inContactZone = dist <= contactRadius
-            
-            // Ataque normal: só acerta inimigos na metade frontal
-            if !isSpecial && !inContactZone {
-                let facingVector = sprite.lastDirection.vector
-                let dot = facingVector.dx * toEnemy.normalized.dx
-                + facingVector.dy * toEnemy.normalized.dy
-                guard dot > 0 else { continue }
-            }
-            
-            health.current = Swift.max(0, health.current - damage)
-            
-            if enemy.get(EnemyComponent.self) != nil {
-                enemySystem.triggerDmg(enemy: enemy)
-                SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
-            } else if enemy.get(BoxComponent.self) != nil {
-                health.healthBarBackground?.run(.fadeIn(withDuration: 0.2))
-                SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
-            }
-            
-            didHitAny = true
-        }
+                    guard
+                        let enemyTransform = enemy.get(TransformComponent.self),
+                        let health         = enemy.get(HealthComponent.self)
+                    else { continue }
+
+                    // 1. Pegamos o raio do inimigo (se for Box ou Enemy)
+                    let enemyRadius: CGFloat
+                    if let enemyComp = enemy.get(EnemyComponent.self) {
+                        enemyRadius = enemyComp.type.radius
+                    } else if let box = enemy.get(BoxComponent.self) {
+                        enemyRadius = 25 // Valor fixo para caixas ou pegue do componente
+                    } else {
+                        enemyRadius = 20
+                    }
+                    
+                    let toEnemyVector = enemyTransform.node.position - origin
+                    let distToCenter  = toEnemyVector.length
+                    
+                    let effectiveDist = Swift.max(0, distToCenter - enemyRadius)
+                    
+                    // 2. Checa se está no alcance
+                    guard effectiveDist <= range else { continue }
+                    
+                    // 3. Checa direção (apenas para ataque normal e se não estiver "dentro" do player)
+                    if !isSpecial && distToCenter > contactRadius {
+                        let facingVector = sprite.lastDirection.vector
+                        let toEnemyDir = toEnemyVector.normalized
+                        
+                        // Se o inimigo está exatamente no mesmo ponto, toEnemyDir será zero.
+                        // Nesse caso, o contato direto (contactRadius) já resolveu.
+                        
+                        let dot = facingVector.dx * toEnemyDir.dx + facingVector.dy * toEnemyDir.dy
+                        
+                        // 0.2 dá um arco de ataque mais generoso (aprox 160 graus na frente)
+                        // Usar > 0 era muito restrito (exatos 90 graus).
+                        guard dot > -0.2 else { continue }
+                    }
+                    
+                    // 4. Aplica o dano
+                    health.current = Swift.max(0, health.current - damage)
+                    
+                    if enemy.get(EnemyComponent.self) != nil {
+                        enemySystem.triggerDmg(enemy: enemy)
+                        SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+                    } else if enemy.get(BoxComponent.self) != nil {
+                        health.healthBarBackground?.run(.fadeIn(withDuration: 0.2))
+                        SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+                    }
+                }
         
         attackComp.didApplyDamage = true
     }

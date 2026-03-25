@@ -6,6 +6,7 @@
 //
 import SpriteKit
 import Foundation
+import AVFoundation
 
 class MenuScene: SKScene {
     
@@ -23,10 +24,20 @@ class MenuScene: SKScene {
     var zenithLabel: SKLabelNode!
     var secondaryLabel: SKLabelNode!
     
+    private var backgroundVideoNode: SKVideoNode?
+    private var videoPlayer: AVQueuePlayer?
+    private var videoLooper: AVPlayerLooper?
+    
+    // MARK: - Touch Tracking
+    private var trackedTouch: UITouch?
+    private var trackedButtonNode: SKNode?
+    private var trackedButtonName: String?
+    private var touchStartLocation: CGPoint = .zero
+    private let cancelDragThreshold: CGFloat = 20
+    
     override init(size: CGSize) {
         super.init(size: size)
-        
-        makeBackground(size: size)
+        setupVideoBackground(videoName: "menu_video", rootNode: self, size: self.size)
         makeButtons(size: size)
         makeTitle()
     }
@@ -36,7 +47,43 @@ class MenuScene: SKScene {
     }
     
     override func didMove(to view: SKView) {
+//        setupVideoBackground(videoName: "menu_video", rootNode: self, size: self.size)
+        
         AdManager.shared.loadAd()
+        SoundManager.shared.playMusic(named: "menuSoundtrack.mp3")
+    }
+    
+    override func willMove(from view: SKView) {
+        super.willMove(from: view)
+
+        stopVideoBackground()
+    }
+    
+    // MARK: - Setup
+    
+    private func setupVideoBackground(videoName: String, rootNode: SKNode, size: CGSize) {
+        guard let videoURL = Bundle.main.url(forResource: videoName, withExtension: "mp4") else {
+            print("Erro: Não foi possível carregar \(videoName).mp4.")
+            return
+        }
+        
+        let playerItem = AVPlayerItem(url: videoURL)
+        let queuePlayer = AVQueuePlayer(playerItem: playerItem)
+        
+        videoLooper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+        videoPlayer = queuePlayer
+        
+        let videoNode = SKVideoNode(avPlayer: queuePlayer)
+        
+        videoNode.size = size
+        videoNode.position = CGPoint(x: size.width/2, y: size.height/2)
+        
+        videoNode.zPosition = -100
+        
+        backgroundVideoNode = videoNode
+        rootNode.addChild(videoNode)
+        
+        videoNode.play()
     }
     
     func makeTitle() {
@@ -53,19 +100,18 @@ class MenuScene: SKScene {
         secondaryLabel.color = .white
         secondaryLabel.position = CGPoint(x: size.width/2 + 28, y: size.height/2 + 37)
         addChild(secondaryLabel)
-        
     }
     
-    func makeBackground(size: CGSize) {
-        let backgroundTexture = SKTexture(imageNamed: "menuBackground")
-        backgroundTexture.filteringMode = .nearest
-        background = SKSpriteNode(texture: backgroundTexture)
-        background.size = size
-        background.position = CGPoint(x: size.width/2, y: size.height/2)
-        background.zPosition = -1
-        background.name = "background"
-        addChild(background)
-    }
+//    func makeBackground(size: CGSize) {
+//        let backgroundTexture = SKTexture(imageNamed: "menuBackground")
+//        backgroundTexture.filteringMode = .nearest
+//        background = SKSpriteNode(texture: backgroundTexture)
+//        background.size = size
+//        background.position = CGPoint(x: size.width/2, y: size.height/2)
+//        background.zPosition = -1
+//        background.name = "background"
+//        addChild(background)
+//    }
     
     func makeButtons(size: CGSize) {
         let buttonsWSize = 160
@@ -86,7 +132,7 @@ class MenuScene: SKScene {
         playLabel.fontColor = .white
         playLabel.horizontalAlignmentMode = .center
         playLabel.verticalAlignmentMode = .center
-        playLabel.position = CGPoint.zero
+        playLabel.position = .zero
         playLabel.zPosition = playButton.zPosition + 1
         playLabel.name = "playLabel"
         playButton.addChild(playLabel)
@@ -106,7 +152,7 @@ class MenuScene: SKScene {
         leaderboardLabel.fontColor = .white
         leaderboardLabel.horizontalAlignmentMode = .center
         leaderboardLabel.verticalAlignmentMode = .center
-        leaderboardLabel.position = CGPoint.zero
+        leaderboardLabel.position = .zero
         leaderboardLabel.zPosition = leaderboardButton.zPosition + 1
         leaderboardLabel.name = "leaderboardLabel"
         leaderboardButton.addChild(leaderboardLabel)
@@ -115,7 +161,8 @@ class MenuScene: SKScene {
         settingsButtonTexture.filteringMode = .nearest
         settingsButton = SKSpriteNode(texture: settingsButtonTexture)
         settingsButton.size = CGSize(width: 50, height: 50)
-        settingsButton.position = CGPoint(x: 770 + settingsButton.size.width/2, y: 322 + settingsButton.size.height/2)
+        settingsButton.position = CGPoint(x: 770 + settingsButton.size.width/2,
+                                          y: 322 + settingsButton.size.height/2)
         settingsButton.zPosition = 1
         settingsButton.name = "settingsButton"
         addChild(settingsButton)
@@ -124,44 +171,129 @@ class MenuScene: SKScene {
         settingsLabelTexture.filteringMode = .nearest
         settingsLabel = SKSpriteNode(texture: settingsLabelTexture)
         settingsLabel.size = CGSize(width: 20, height: 20)
-        settingsLabel.position = CGPoint.zero
+        settingsLabel.position = .zero
         settingsLabel.zPosition = 1
         settingsLabel.name = "settingsLabel"
         settingsButton.addChild(settingsLabel)
     }
     
+    // MARK: - Touch Handling
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for touch in touches {
-            let location = touch.location(in: self)
-            let touchedNode = self.atPoint(location)
-            if let name = touchedNode.name {
-                switch name {
-                case "playButton", "playLabel":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
-                    vibrate(with: .light)
-                    let gameScene = GameScene(size: self.size)
-                    gameScene.scaleMode = self.scaleMode
-                    self.run(specialSequence) {
-                        self.view?.presentScene(gameScene)
-                    }
-    
-                case "leaderboardButton", "leaderboardLabel":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
-                    vibrate(with: .light)
-                    GameCenterManager.shared.showLeaderboard(from: self.view?.window?.rootViewController)
-                    
-                case "settingsButton", "settingsLabel":
-                    SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
-                    vibrate(with: .light)
-                    let settingsScene = SettingsScene(size: self.size)
-                    settingsScene.scaleMode = self.scaleMode
-                    self.view?.presentScene(settingsScene, transition: .moveIn(with: .right, duration: 0.5))
-                    
-                default:
-                    break
-                }
+        guard trackedTouch == nil, let touch = touches.first else { return }
+        
+        let location = touch.location(in: self)
+        let touchedNode = self.atPoint(location)
+        
+        var current: SKNode? = touchedNode
+        var resolvedName: String? = nil
+        while let node = current {
+            if let n = node.name, !n.isEmpty {
+                resolvedName = n
+                break
             }
+            current = node.parent
+        }
+        guard let name = resolvedName else { return }
+        
+        let buttonNode = current ?? touchedNode
+        
+        switch name {
+        case "playButton",       "playLabel",
+            "leaderboardButton", "leaderboardLabel",
+            "settingsButton",    "settingsLabel":
+            trackedTouch       = touch
+            trackedButtonNode  = buttonNode
+            trackedButtonName  = name
+            touchStartLocation = location
+            buttonNode.removeAction(forKey: "springTap")
+            buttonNode.run(.scale(to: 0.82, duration: 0.08), withKey: "springTap")
+            SoundManager.shared.play(SoundManager.shared.button, on: touchedNode)
+            vibrate(with: .light)
+        default:
+            break
         }
     }
+    
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let tracked = trackedTouch, touches.contains(tracked) else { return }
+        
+        let location = tracked.location(in: self)
+        let dx = abs(location.x - touchStartLocation.x)
+        let dy = abs(location.y - touchStartLocation.y)
+        
+        if dx > cancelDragThreshold || dy > cancelDragThreshold {
+            cancelTrackedButton()
+        }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let tracked = trackedTouch, touches.contains(tracked) else { return }
+        defer { clearTrackedButton() }
+        
+        guard let name       = trackedButtonName,
+              let buttonNode = trackedButtonNode else { return }
+        
+        buttonNode.removeAction(forKey: "springTap")
+        let bounce = SKAction.scale(to: 1.12, duration: 0.10)
+        bounce.timingMode = .easeOut
+        let settle = SKAction.scale(to: 1.0, duration: 0.10)
+        settle.timingMode = .easeInEaseOut
+        buttonNode.run(.sequence([bounce, settle]), withKey: "springTap")
+        
+        switch name {
+        case "playButton", "playLabel":
+            let gameScene = GameScene(size: self.size)
+            gameScene.scaleMode = self.scaleMode
+            self.run(specialSequence) {
+                self.view?.presentScene(gameScene)
+            }
+            
+        case "leaderboardButton", "leaderboardLabel":
+            GameCenterManager.shared.showLeaderboard(
+                from: self.view?.window?.rootViewController)
+            
+        case "settingsButton", "settingsLabel":
+            let settingsScene = SettingsScene(size: self.size)
+            settingsScene.scaleMode = self.scaleMode
+            self.view?.presentScene(settingsScene,
+                                    transition: .moveIn(with: .right, duration: 0.5))
+            
+        default:
+            break
+        }
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let tracked = trackedTouch, touches.contains(tracked) else { return }
+        cancelTrackedButton()
+    }
+    
+    // MARK: - Helpers
+    
+    private func cancelTrackedButton() {
+        trackedButtonNode?.removeAction(forKey: "springTap")
+        let restore = SKAction.scale(to: 1.0, duration: 0.12)
+        restore.timingMode = .easeOut
+        trackedButtonNode?.run(restore, withKey: "springTap")
+        clearTrackedButton()
+    }
+    
+    private func clearTrackedButton() {
+        trackedTouch      = nil
+        trackedButtonNode = nil
+        trackedButtonName = nil
+    }
+    
+    private func stopVideoBackground() {
+            backgroundVideoNode?.pause()
+            videoLooper?.disableLooping()
+            videoPlayer?.removeAllItems()
+            
+            backgroundVideoNode?.removeFromParent()
+            
+            backgroundVideoNode = nil
+            videoPlayer = nil
+            videoLooper = nil
+        }
 }
