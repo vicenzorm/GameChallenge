@@ -47,7 +47,7 @@ class SettingsScene: SKScene {
     }
     
     func makeLabels() {
-        titleLabel = SKLabelNode(text: "Settings")
+        titleLabel = SKLabelNode(text: NSLocalizedString("title_settings", comment: ""))
         titleLabel.fontColor = .white
         titleLabel.fontSize = 67
         titleLabel.fontName = AppManager.shared.secondaryFont
@@ -62,15 +62,15 @@ class SettingsScene: SKScene {
         let sFXSwitchBackground = AppManager.shared.sFXEnabled ? "miniButtonBackground" : "miniButtonDeactivated"
         let hapticsSwitchBackground = AppManager.shared.hapticsEnabled ? "miniButtonBackground" : "miniButtonDeactivated"
         
-        musicSwitch = makeButton(textureIcon: "musicIcon", textureBackground: musicSwitchBackground, label: "Music", pos: CGPoint(x: 300, y: 135), buttonIconSize: 40)
+        musicSwitch = makeButton(textureIcon: "musicIcon", textureBackground: musicSwitchBackground, label: "settings_music", pos: CGPoint(x: 300, y: 135), buttonIconSize: 40)
         musicSwitch.name = "musicSwitch"
         addChild(musicSwitch)
         
-        sFXSwitch = makeButton(textureIcon: "sFXIcon", textureBackground: sFXSwitchBackground, label: "Sound FX", pos: CGPoint(x: 432, y: 135), buttonIconSize: 40)
+        sFXSwitch = makeButton(textureIcon: "sFXIcon", textureBackground: sFXSwitchBackground, label: "settings_sfx", pos: CGPoint(x: 432, y: 135), buttonIconSize: 40)
         sFXSwitch.name = "sFXSwitch"
         addChild(sFXSwitch)
                        
-        hapticsSwitch = makeButton(textureIcon: "hapticsIcon", textureBackground: hapticsSwitchBackground, label: "Haptics", pos: CGPoint(x: 564, y: 135), buttonIconSize: 40)
+        hapticsSwitch = makeButton(textureIcon: "hapticsIcon", textureBackground: hapticsSwitchBackground, label: "settings_haptics", pos: CGPoint(x: 564, y: 135), buttonIconSize: 40)
         hapticsSwitch.name = "hapticsSwitch"
         addChild(hapticsSwitch)
                                
@@ -88,11 +88,13 @@ class SettingsScene: SKScene {
         let node = SKSpriteNode(texture: buttonBackgroundTexture)
         node.size = buttonsSize
         node.position = pos
-        let label = SKLabelNode(text: label)
-        label.fontColor = .white
-        label.fontName = AppManager.shared.secondaryFont
-        label.fontSize = 11
-        label.position = CGPoint(x: 0, y: -70)
+        
+        let localizedText = NSLocalizedString(label, comment: "")
+        let labelNode = SKLabelNode(text: localizedText)
+        labelNode.fontColor = .white
+        labelNode.fontName = AppManager.shared.secondaryFont
+        labelNode.fontSize = 11
+        labelNode.position = CGPoint(x: 0, y: -70)
         
         let buttonIconTexture = SKTexture(imageNamed: textureIcon)
         buttonIconTexture.filteringMode = .nearest
@@ -102,7 +104,7 @@ class SettingsScene: SKScene {
         buttonIcon.zPosition = node.zPosition + 1
         
         node.addChild(buttonIcon)
-        node.addChild(label)
+        node.addChild(labelNode)
         return node
     }
     

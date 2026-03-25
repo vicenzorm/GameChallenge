@@ -40,14 +40,14 @@ class MenuScene: SKScene {
     }
     
     func makeTitle() {
-        zenithLabel = SKLabelNode(text:"zenith")
+        zenithLabel = SKLabelNode(text: "zenith")
         zenithLabel.fontName = AppManager.shared.appFont
         zenithLabel.fontSize = 220
         zenithLabel.color = .white
         zenithLabel.position = CGPoint(x: size.width/2 + 130, y: size.height/2 - 90)
         addChild(zenithLabel)
         
-        secondaryLabel = SKLabelNode(text: "the endless tower")
+        secondaryLabel = SKLabelNode(text: NSLocalizedString("title_sub", comment: "Subtitle"))
         secondaryLabel.fontName = AppManager.shared.appFont
         secondaryLabel.fontSize = 37
         secondaryLabel.color = .white
@@ -80,7 +80,7 @@ class MenuScene: SKScene {
         playButton.name = "playButton"
         addChild(playButton)
         
-        playLabel = SKLabelNode(text: "Start")
+        playLabel = SKLabelNode(text: NSLocalizedString("button_play", comment: ""))
         playLabel.fontName = AppManager.shared.secondaryFont
         playLabel.fontSize = 18
         playLabel.fontColor = .white
@@ -100,7 +100,7 @@ class MenuScene: SKScene {
         leaderboardButton.name = "leaderboardButton"
         addChild(leaderboardButton)
         
-        leaderboardLabel = SKLabelNode(text: "Leaderboard")
+        leaderboardLabel = SKLabelNode(text: NSLocalizedString("button_leaderboard", comment: ""))
         leaderboardLabel.fontName = AppManager.shared.secondaryFont
         leaderboardLabel.fontSize = 11
         leaderboardLabel.fontColor = .white

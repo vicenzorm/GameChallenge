@@ -96,7 +96,7 @@ class HUD: SKNode {
         specialMask = sMask
         
         // ── Wave label (top-centre) ────────────────────────────────
-        waveLabel          = SKLabelNode(text: "Floor 1")
+        waveLabel          = SKLabelNode(text: "")
         waveLabel.fontName = AppManager.shared.secondaryFont
         waveLabel.fontSize = 16
         waveLabel.fontColor = .white
@@ -288,14 +288,18 @@ class HUD: SKNode {
     }
     
     func updateWave(_ wave: Int) {
-        waveLabel.text = "Floor \(wave)"
+        let format = NSLocalizedString("pause_floor", comment: "")
+        let text = String(format: format, wave)
+        waveLabel.text = text
         countdownLabel.text = ""
         waveLabel.run(.sequence([.scale(to: 1.4, duration: 0.12), .scale(to: 1.0, duration: 0.12)]))
     }
     
     func showCountdown(_ seconds: Int) {
         if seconds > 0 {
-            countdownLabel.text = "Next floor in \(seconds)…"
+            let format = NSLocalizedString("countdown_label", comment: "")
+            let text = String(format: format, seconds)
+            countdownLabel.text = text
         } else {
             countdownLabel.text = ""
         }
@@ -327,12 +331,13 @@ class HUD: SKNode {
         bg.zPosition = 0
         root.addChild(bg)
         
-        let title = SKLabelNode(text: "Pause")
+        let title = SKLabelNode(text: NSLocalizedString("pause_title", comment: ""))
         title.fontName = "PressStart2P-Regular"; title.fontSize = 22.36
         title.fontColor = .white;
         title.position = CGPoint(x: -286.25, y: 83.5)
         title.zPosition = 1
         root.addChild(title)
+        
         
         let title2 = SKLabelNode(text: waveLabel.text)
         title2.fontName = "PressStart2P-Regular"; title2.fontSize = 67
@@ -343,12 +348,12 @@ class HUD: SKNode {
         root.addChild(title2)
         
         root.addChild(makeOverlayButton(
-            text: "Resume",
+            text: "pause_resume",
             pos: CGPoint(x: -262.25, y: -53.75),
             name: "resumeButton"
         ))
         root.addChild(makeOverlayButton(
-            text: "Exit",
+            text: "pause_exit",
             pos: CGPoint(x: -78.25, y: -53.75),
             name: "menuFromPause"
         ))
@@ -441,7 +446,7 @@ class HUD: SKNode {
         bg.zPosition = 0
         root.addChild(bg)
 
-        let title = SKLabelNode(text: "Game Over")
+        let title = SKLabelNode(text: NSLocalizedString("gameOver_title", comment: ""))
         title.fontName = "PressStart2P-Regular"
         title.fontSize = 67
         title.fontColor = .white
@@ -453,7 +458,7 @@ class HUD: SKNode {
         
         // Passando o asset "AD" aqui
         let continueBtn = makeOverlayButton(
-            text: "Continue",
+            text: "button_continue",
             pos: CGPoint(x: -210, y: -50),
             name: canShow ? "continueButton" : "continueDisabled",
             iconAssetName: "AD"
@@ -478,8 +483,8 @@ class HUD: SKNode {
         
         root.addChild(continueBtn)
         
-        root.addChild(makeOverlayButton(text: "Restart", pos: CGPoint(x: 0, y: -50), name: "restartButton"))
-        root.addChild(makeOverlayButton(text: "Menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
+        root.addChild(makeOverlayButton(text: "button_restart", pos: CGPoint(x: 0, y: -50), name: "restartButton"))
+        root.addChild(makeOverlayButton(text: "button_menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
         
         addChild(root)
         
@@ -506,7 +511,7 @@ class HUD: SKNode {
         
         let container = SKNode()
         
-        let lbl = SKLabelNode(text: text)
+        let lbl = SKLabelNode(text: NSLocalizedString(text, comment: ""))
         lbl.name = name
         lbl.fontName = "PressStart2P-Regular"
         lbl.fontSize = 11.75
