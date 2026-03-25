@@ -576,7 +576,8 @@ class GameScene: SKScene {
             // Para o movimento do inimigo morto
             d.get(MovementComponent.self)?.velocity = .zero
             // Trigga animação — nó será removido pelo EnemySystem ao terminar
-            enemySystem.triggerDeath(enemy: d)
+            let wasSpecial = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
+            enemySystem.triggerDeath(enemy: d, wasSpecial: wasSpecial, player: playerEntity)
             waveSystem.registerEnemyKilled()   // ← conta o inimigo morto
             hud.updateWaveProgress(waveSystem.waveProgress)   // ← atualiza a barra
             dyingEnemies.append(d)   // ← move para lista de moribundos
@@ -868,7 +869,7 @@ class GameScene: SKScene {
             waveSystem.registerEnemyKilled()
             // Trigga animação de morte em vez de remover direto
             enemy.get(MovementComponent.self)?.velocity = .zero
-            enemySystem.triggerDeath(enemy: enemy)
+            enemySystem.triggerDeath(enemy: enemy, wasSpecial: true, player: playerEntity)
             dyingEnemies.append(enemy)
         }
         enemyEntities.removeAll()
