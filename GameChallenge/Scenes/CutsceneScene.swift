@@ -34,8 +34,10 @@ class CutscenePlayer: NSObject {
         root.addChild(bg)
 
         // Label principal — "FLOOR X"
-        let floorLabel          = SKLabelNode()
-        floorLabel.text         = "FLOOR \(nextFloor - 1)"
+        
+        let format = NSLocalizedString("floor_label", comment: "")
+        let text = String(format: format, nextFloor - 1)
+        let floorLabel          = SKLabelNode(text: text)
         floorLabel.fontName     = AppManager.shared.secondaryFont
         floorLabel.fontSize     = 52
         floorLabel.fontColor    = .white
@@ -46,8 +48,7 @@ class CutscenePlayer: NSObject {
         root.addChild(floorLabel)
 
         // Label secundário — "GET READY"
-        let subLabel            = SKLabelNode()
-        subLabel.text           = "Cleared"
+        let subLabel            = SKLabelNode(text: NSLocalizedString("cleared_label", comment: ""))
         subLabel.fontName       = AppManager.shared.secondaryFont
         subLabel.fontSize       = 20
         subLabel.fontColor      = UIColor(white: 0.7, alpha: 1)

@@ -766,7 +766,9 @@ class GameScene: SKScene {
     
     /// Displays a wave banner at the center of the screen.
     private func showWaveBanner(wave: Int) {
-        let lbl = SKLabelNode(text: "FLOOR \(wave)")
+        let format = NSLocalizedString("wave_banner", comment: "")
+        let text = String(format: format, waveSystem.currentWave)
+        let lbl = SKLabelNode(text: text)
         lbl.fontName  = AppManager.shared.secondaryFont
         lbl.fontSize  = 32
         lbl.fontColor = .white

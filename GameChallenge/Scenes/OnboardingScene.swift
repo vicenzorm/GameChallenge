@@ -34,9 +34,9 @@ class OnboardingScene: SKScene {
     }
 
     private let pages: [OnboardingPage] = [
-        OnboardingPage(backgroundAsset: "bg1", text: "The Tower was always there. A vast anomaly of dark stone that splits the skies, feared and shunned by all. Legends say no one has ever returned from its gates. But now, the structure has awakened and is expanding, draining the land of life and drying our world."),
-        OnboardingPage(backgroundAsset: "bg2", text: "You are not an adventurer seeking glory, and there are no treasures waiting at the top. You carry a burden. Wielding an ancient sword forged from the very core of the Tower, you are the only one capable of wounding this structure from within."),
-        OnboardingPage(backgroundAsset: "bg3", text: "As you cross the gates, the Tower will know you are there. It is a living, reactive organism that will create defenses in real time to crush you. The higher you climb, the more brutal the response will be. Wield your blade and survive. The ascent begins now.")
+        OnboardingPage(backgroundAsset: "bg1", text: NSLocalizedString("onboarding1", comment: "")),
+        OnboardingPage(backgroundAsset: "bg2", text: NSLocalizedString("onboarding2", comment: "")),
+        OnboardingPage(backgroundAsset: "bg3", text: NSLocalizedString("onboarding3", comment: ""))
     ]
 
     private var currentPageIndex = 0
@@ -136,7 +136,7 @@ class OnboardingScene: SKScene {
         let hint = SKLabelNode(fontNamed: fontName)
         hint.fontSize = 7
         hint.fontColor = UIColor(white: 1, alpha: 0.5)
-        hint.text = "TAP TO CONTINUE"
+        hint.text = NSLocalizedString("continue_label", comment: "")
         hint.horizontalAlignmentMode = .right
         hint.position = CGPoint(x: boxWidth / 2 - textPadding, y: -boxHeight / 2 + 12)
         hint.zPosition = 2
