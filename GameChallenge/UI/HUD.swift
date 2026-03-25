@@ -387,7 +387,11 @@ class HUD: SKNode {
         title2.horizontalAlignmentMode = .left
         root.addChild(title2)
         
-        root.addChild(makeOverlayButton(
+        let buttonSpacing: CGFloat = 16
+        let buttonW: CGFloat = 200
+        let leftAnchor: CGFloat = -341.25
+        
+        let resumeBtn = makeOverlayButton(
             text: "pause_resume",
             pos: CGPoint(x: -262.25, y: -53.75),
             name: "resumeButton"
