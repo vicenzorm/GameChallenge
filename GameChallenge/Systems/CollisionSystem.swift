@@ -67,8 +67,9 @@ class CollisionSystem {
             switch enemyComp.type {
             case .weak:    soundManager.play(soundManager.swordAttack1, on: enemyTransform.node)
             case .normal:  soundManager.play(soundManager.swordAttack2, on: enemyTransform.node)
-            case .strong, .shooter, .boss:
-                           soundManager.play(soundManager.monsterBite,  on: enemyTransform.node)
+            case .strong:  soundManager.play(soundManager.monsterBite,  on: enemyTransform.node)
+            case .shooter, .boss:
+                           soundManager.play(soundManager.flameHit,  on: enemyTransform.node)
             }
         }
 

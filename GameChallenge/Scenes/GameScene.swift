@@ -595,6 +595,7 @@ class GameScene: SKScene {
             if let node = box.get(TransformComponent.self)?.node {
                 node.run(.sequence([
                     .scale(to: 0.1, duration: 0.15),
+//                    SoundManager.shared.play(SoundManager.shared.boxDestruction)
                     .removeFromParent()
                 ]))
             }
