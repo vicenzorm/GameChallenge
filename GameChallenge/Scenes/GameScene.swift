@@ -746,7 +746,7 @@ class GameScene: SKScene {
     /// Randomly drops a coin at the specified position with a 1 in 3 chance.
     private func maybeDropCoin(at pos: CGPoint) {
         guard Int.random(in: 0..<3) == 0 else { return }
-        coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
+        //coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
     }
     
     /// Randomly drops a consumable at the specified position.
