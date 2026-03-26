@@ -636,7 +636,7 @@ class GameScene: SKScene {
             waveSystem.update(deltaTime: dt, activeEnemies: enemyEntities.count,
                               sceneSize: worldSize, playerPosition: node.position)
         }
-        coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
+        //coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
         
         // 15. Item spawn
         itemSpawnSystem.update(
