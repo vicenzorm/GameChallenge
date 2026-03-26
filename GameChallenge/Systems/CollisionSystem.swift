@@ -7,18 +7,19 @@ import SpriteKit
 import Foundation
 
 class CollisionSystem {
-
+    
     // Callback chamado pelo GameScene para acionar o shake + flash
     // Atribuído em GameScene: collisionSystem.onPlayerHit = { [weak self] node in ... }
     var onPlayerHit: ((SKNode) -> Void)?
     var onPlayerHealed: (() -> Void)?
     var onPlayerSpecialCharged: (() -> Void)?
     var onKillAllUsed: (() -> Void)?
-
+    var onPickedShuriken: (() -> Void)?
+    
     // Cooldown para evitar que shake e flash disparem todo frame durante colisão contínua
     private var hitFeedbackCooldown: TimeInterval = 0
     private let hitFeedbackInterval: TimeInterval = 0.4  // ← segundos entre cada feedback visual
-
+    
     func checkEnemyPlayerCollisions(
         playerEntity: Entity,
         enemies: [Entity],
@@ -30,49 +31,49 @@ class CollisionSystem {
             let playerTransform = playerEntity.get(TransformComponent.self),
             let playerHealth    = playerEntity.get(HealthComponent.self)
         else { return }
-
+        
         guard !playerHealth.isInvulnerable else { return }
-
+        
         let pPos = playerTransform.node.position
-
+        
         // Desconta o cooldown do feedback visual
         hitFeedbackCooldown = max(0, hitFeedbackCooldown - deltaTime)
-
+        
         var tookDamageThisFrame = false
-
+        
         for enemy in enemies {
             guard
                 let enemyTransform = enemy.get(TransformComponent.self),
                 let enemyComp      = enemy.get(EnemyComponent.self)
             else { continue }
-
+            
             let minDist = 24 + enemyComp.type.radius
             guard pPos.distance(to: enemyTransform.node.position) < minDist else { continue }
-
+            
             // ── Dano ──────────────────────────────────────────────────────
             playerHealth.current = Swift.max(
                 0,
                 playerHealth.current - enemyComp.type.damage * CGFloat(deltaTime)
             )
             tookDamageThisFrame = true
-
+            
             // ── Animação de ataque do inimigo ─────────────────────────────
             enemySystem.triggerSkeletonAtk(enemy: enemy)
-
+            
             // ── Som (throttle via EnemyComponent) ─────────────────────────
             guard enemyComp.canPlayAttackSound else { continue }
             enemyComp.canPlayAttackSound  = false
             enemyComp.attackSoundCooldown = 0.5
-
+            
             switch enemyComp.type {
             case .weak:    soundManager.play(soundManager.swordAttack1, on: enemyTransform.node)
             case .normal:  soundManager.play(soundManager.swordAttack2, on: enemyTransform.node)
             case .strong:  soundManager.play(soundManager.monsterBite,  on: enemyTransform.node)
             case .shooter, .boss:
-                           soundManager.play(soundManager.flameHit,  on: enemyTransform.node)
+                soundManager.play(soundManager.flameHit,  on: enemyTransform.node)
             }
         }
-
+        
         // ── Shake + flash: dispara no máximo 1x a cada hitFeedbackInterval ──
         if tookDamageThisFrame && hitFeedbackCooldown == 0 {
             hitFeedbackCooldown = hitFeedbackInterval
@@ -80,9 +81,9 @@ class CollisionSystem {
             vibrate(with: .heavy)
         }
     }
-
+    
     // MARK: - Coin / Item collection
-
+    
     func checkCoinCollection(playerEntity: Entity, coins: [Entity]) -> [Entity] {
         guard let playerTransform = playerEntity.get(TransformComponent.self) else { return [] }
         let pPos = playerTransform.node.position
@@ -91,11 +92,11 @@ class CollisionSystem {
             return pPos.distance(to: t.node.position) < 32
         }
     }
-
+    
     func handleItemPickup(player: Entity, item: Entity, scene: GameScene) {
         guard let itemType = item.get(ItemComponent.self)?.type else { return }
         guard let playerNode = player.get(TransformComponent.self)?.node else {return}
-
+        
         switch itemType {
         case .healthPotion:
             SoundManager.shared.play(SoundManager.shared.healthPickup, on: playerNode)
@@ -103,19 +104,28 @@ class CollisionSystem {
                 hp.current = min(hp.max, hp.current + 50)
                 onPlayerHealed?()
             }
+            item.get(TransformComponent.self)?.node.removeFromParent()
         case .specialCharge:
             SoundManager.shared.play(SoundManager.shared.specialPickup, on: playerNode)
             if let pl = player.get(PlayerComponent.self) {
                 pl.killStreak   = max(pl.killStreak, PlayerComponent.weakKillsNeeded)
                 pl.specialReady = true
                 onPlayerSpecialCharged?()   // ← adicione aqui
+                item.get(TransformComponent.self)?.node.removeFromParent()
             }
         case .killAll:
             SoundManager.shared.play(SoundManager.shared.killAll, on: playerNode)
             scene.clearEnemiesAroundPlayer()
-            onKillAllUsed?()   
+            onKillAllUsed?()
+            item.get(TransformComponent.self)?.node.removeFromParent()
+            
+        case .shuriken:
+            guard let pl = player.get(PlayerComponent.self) else { return }
+            guard pl.shurikenCount < 10 else { return }
+            pl.shurikenCount += 1
+            onPickedShuriken?()
+            item.get(TransformComponent.self)?.node.removeFromParent()
         }
-
-        item.get(TransformComponent.self)?.node.removeFromParent()
+        
     }
 }

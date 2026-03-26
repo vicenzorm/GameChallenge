@@ -13,6 +13,7 @@ class PlayerComponent: Component {
     var coins: Int = 0
     var killStreak: Int = 0          // resets on use of special
     var specialReady: Bool = false
+    var shurikenCount: Int = 5
 
     // Special thresholds
     static let weakKillsNeeded = 5

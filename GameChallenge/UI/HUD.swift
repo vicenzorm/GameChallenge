@@ -51,6 +51,8 @@ class HUD: SKNode {
     private var videoPlayer: AVQueuePlayer?
     private var videoLooper: AVPlayerLooper?
     
+    private var shurikenInt = 5
+    private var shurikenCount = SKLabelNode(text: "5/10")
 
     init(screenSize: CGSize) {
         self.screenSize = screenSize
@@ -99,6 +101,17 @@ class HUD: SKNode {
         sCrop.zPosition = 100
         specialCrop = sCrop
         specialMask = sMask
+        
+        shurikenCount.color = .white
+        shurikenCount.position = CGPoint(x: -hw + 130, y: hh - 85)
+        shurikenCount.zPosition = 100
+        shurikenCount.fontName = AppManager.shared.secondaryFont
+        shurikenCount.fontSize = 16
+        
+        let shurikenSprite = SKSpriteNode(imageNamed: "joystick_shuriken")
+        shurikenSprite.zPosition = 101
+        shurikenSprite.position  = CGPoint(x: -hw + 180, y: hh - 75)
+        shurikenSprite.size      = CGSize(width: 20, height: 20)
         
         // ── Wave label (top-centre) ────────────────────────────────
         waveLabel          = SKLabelNode(text: "")
@@ -213,6 +226,7 @@ class HUD: SKNode {
         addChild(charImg)
         addChild(barBg);         addChild(healthCrop)
         addChild(specialBarBg);  addChild(specialCrop)
+        addChild(shurikenCount); addChild(shurikenSprite)
         addChild(waveLabel);     addChild(countdownLabel)
         addChild(waveProgressBg); addChild(waveProgressFill)   // barra de progresso
         addChild(pauseButton)
@@ -224,6 +238,11 @@ class HUD: SKNode {
     required init?(coder aDecoder: NSCoder) { fatalError() }
     
     // MARK: - Update
+    
+    func updateShurikenCount(_ count: Int) {
+        shurikenInt = count
+        shurikenCount.text = "\(shurikenInt)/10"
+    }
     
     func updateHealth(current: CGFloat, maxHP: CGFloat) {
         let ratio = maxHP > 0 ? (current / maxHP) : 0
