@@ -12,6 +12,7 @@ class ItemComponent: Component{
         case healthPotion
         case specialCharge
         case killAll
+        case shuriken
     }
     
     let type: ItemType

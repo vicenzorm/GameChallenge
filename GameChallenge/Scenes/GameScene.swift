@@ -154,9 +154,14 @@ class GameScene: SKScene {
         collisionSystem.onPlayerSpecialCharged = { [weak self] in
             self?.flashVignette(color: .cyan, intensity: 0.5, duration: 0.5)
         }
+        collisionSystem.onPickedShuriken = { [weak self] in
+            guard let pl = self?.playerEntity.get(PlayerComponent.self) else { return }
+            self?.hud.updateShurikenCount(pl.shurikenCount)
+        }
+        
         collisionSystem.onKillAllUsed = { [weak self] in
             guard let self else { return }
-
+            
             // ── Shake de explosão ─────────────────────────────────────
             self.shakeCamera(intensity: 18, duration: 0.5)
 
@@ -482,25 +487,31 @@ class GameScene: SKScene {
                             }
                         }
                         
-                        // Só atira se houver um inimigo próximo na tela (evita atirar no vazio)
-                        if let target = nearestEnemy, let targetNode = target.get(TransformComponent.self)?.node {
-                            vibrate(with: .light)
-                            attack.lastShotTime = currentTime
+                        if pl.shurikenCount > 0 {
                             
-                            // Calcula direção inicial
-                            let dx = targetNode.position.x - playerNode.position.x
-                            let dy = targetNode.position.y - playerNode.position.y
-                            let dist = hypot(dx, dy)
-                            let initialDir = dist > 0 ? CGVector(dx: dx/dist, dy: dy/dist) : CGVector(dx: 1, dy: 0)
-                            
-                            let projectile = EntityFactory.makeProjectile(
-                                at: playerNode.position,
-                                direction: initialDir,
-                                scene: self,
-                                target: target // Passa o alvo!
-                            )
-                            projectileEntities.append(projectile)
+                            // Só atira se houver um inimigo próximo na tela (evita atirar no vazio)
+                            if let target = nearestEnemy, let targetNode = target.get(TransformComponent.self)?.node {
+                                vibrate(with: .light)
+                                attack.lastShotTime = currentTime
+                                
+                                // Calcula direção inicial
+                                let dx = targetNode.position.x - playerNode.position.x
+                                let dy = targetNode.position.y - playerNode.position.y
+                                let dist = hypot(dx, dy)
+                                let initialDir = dist > 0 ? CGVector(dx: dx/dist, dy: dy/dist) : CGVector(dx: 1, dy: 0)
+                                
+                                let projectile = EntityFactory.makeProjectile(
+                                    at: playerNode.position,
+                                    direction: initialDir,
+                                    scene: self,
+                                    target: target // Passa o alvo!
+                                )
+                                projectileEntities.append(projectile)
+                                pl.shurikenCount -= 1
+                                hud.updateShurikenCount(pl.shurikenCount)
+                            }
                         }
+                        
                     }
                 }
             }
@@ -594,6 +605,7 @@ class GameScene: SKScene {
         let deadBoxes = boxEntities.filter { $0.get(HealthComponent.self)?.isAlive == false }
         for box in deadBoxes {
             if let node = box.get(TransformComponent.self)?.node {
+                maybeDropItem(at: node.position)
                 node.run(.sequence([
                     .scale(to: 0.1, duration: 0.15),
 //                    SoundManager.shared.play(SoundManager.shared.boxDestruction)
@@ -760,7 +772,8 @@ class GameScene: SKScene {
         let type: ItemComponent.ItemType
         if roll < 0.05 { type = .killAll }
         else if roll < 0.15 { type = .specialCharge }
-        else { type = .healthPotion }
+        else if roll < 0.25 { type = .healthPotion}
+        else { type = .shuriken }
         
         let item = EntityFactory.makeConsumable(type: type, at: pos, scene: self)
         addItemEntity(item)
