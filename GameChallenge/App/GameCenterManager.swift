@@ -60,6 +60,35 @@ class GameCenterManager: NSObject, GKGameCenterControllerDelegate {
         }
     }
     
+    func reportAchievement(id: String, percent: Double) {
+            guard isAuthenticated else {
+                print("Game Center: Não autenticado para reportar achievement")
+                return
+            }
+            
+            let achievement = GKAchievement(identifier: id)
+            achievement.percentComplete = percent
+            achievement.showsCompletionBanner = true // Faz aparecer o banner oficial da Apple no topo
+            
+            GKAchievement.report([achievement]) { error in
+                if let error = error {
+                    print("Erro ao reportar achievement \(id): \(error.localizedDescription)")
+                } else {
+                    print("Achievement \(id) reportado com sucesso: \(percent)%")
+                }
+            }
+        }
+
+        /// Abre a tela de Achievements do Game Center
+        func showAchievements(from viewController: UIViewController? = nil) {
+            guard isAuthenticated else { return }
+            
+            let presenter = viewController ?? topViewController()
+            let gcVC = GKGameCenterViewController(state: .achievements)
+            gcVC.gameCenterDelegate = self
+            presenter?.present(gcVC, animated: true)
+        }
+    
     /// Presents the Game Center leaderboard. Pass a view controller when calling from a scene (e.g. `view?.window?.rootViewController`) for best compatibility.
     func showLeaderboard(from viewController: UIViewController? = nil) {
         guard GKLocalPlayer.local.isAuthenticated else {

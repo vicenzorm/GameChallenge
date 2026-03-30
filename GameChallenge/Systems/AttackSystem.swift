@@ -25,7 +25,7 @@ class AttackSystem {
         else { return }
         
         let origin = attackerTransform.node.position
-        let range  = isSpecial ? attackComp.range * 1.3 : attackComp.range
+        let range  = isSpecial ? attackComp.range * 1 : attackComp.range
         let damage = isSpecial ? attackComp.damage * 4  : attackComp.damage
         
         let contactRadius: CGFloat = 45
@@ -79,7 +79,20 @@ class AttackSystem {
                         SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
                     } else if enemy.get(BoxComponent.self) != nil {
                         health.healthBarBackground?.run(.fadeIn(withDuration: 0.2))
-                        SoundManager.shared.play(SoundManager.shared.hit1, on: enemyTransform.node)
+                        if enemy.get(BoxComponent.self)?.obstacleType == .firecamp {
+                            SoundManager.shared.play(SoundManager.shared.firePutOut, on: enemyTransform.node)
+                        }
+                            else if enemy.get(BoxComponent.self)?.obstacleType == .treasure {
+                                SoundManager.shared.play(SoundManager.shared.hitBoxComponent, on: enemyTransform.node)
+                                SoundManager.shared.play(SoundManager.shared.clinkingCoins, on: enemyTransform.node)
+                            }
+                        else if enemy.get(BoxComponent.self)?.obstacleType == .vase {
+                            SoundManager.shared.play(SoundManager.shared.vaseBreak, on: enemyTransform.node)
+                        }
+                        
+                        else {
+                            SoundManager.shared.play(SoundManager.shared.hitBoxComponent, on: enemyTransform.node)
+                        }
                     }
                 }
         

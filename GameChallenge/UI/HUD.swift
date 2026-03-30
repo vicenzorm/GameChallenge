@@ -51,6 +51,8 @@ class HUD: SKNode {
     private var videoPlayer: AVQueuePlayer?
     private var videoLooper: AVPlayerLooper?
     
+    private var shurikenInt = 5
+    private var shurikenCount = SKLabelNode(text: "5/10")
 
     init(screenSize: CGSize) {
         self.screenSize = screenSize
@@ -100,8 +102,19 @@ class HUD: SKNode {
         specialCrop = sCrop
         specialMask = sMask
         
+        shurikenCount.color = .white
+        shurikenCount.position = CGPoint(x: -hw + 130, y: hh - 85)
+        shurikenCount.zPosition = 100
+        shurikenCount.fontName = AppManager.shared.secondaryFont
+        shurikenCount.fontSize = 16
+        
+        let shurikenSprite = SKSpriteNode(imageNamed: "joystick_shuriken")
+        shurikenSprite.zPosition = 101
+        shurikenSprite.position  = CGPoint(x: -hw + 180, y: hh - 75)
+        shurikenSprite.size      = CGSize(width: 20, height: 20)
+        
         // ── Wave label (top-centre) ────────────────────────────────
-        waveLabel          = SKLabelNode(text: "Floor 1")
+        waveLabel          = SKLabelNode(text: "")
         waveLabel.fontName = AppManager.shared.secondaryFont
         waveLabel.fontSize = 16
         waveLabel.fontColor = .white
@@ -213,6 +226,7 @@ class HUD: SKNode {
         addChild(charImg)
         addChild(barBg);         addChild(healthCrop)
         addChild(specialBarBg);  addChild(specialCrop)
+        addChild(shurikenCount); addChild(shurikenSprite)
         addChild(waveLabel);     addChild(countdownLabel)
         addChild(waveProgressBg); addChild(waveProgressFill)   // barra de progresso
         addChild(pauseButton)
@@ -224,6 +238,11 @@ class HUD: SKNode {
     required init?(coder aDecoder: NSCoder) { fatalError() }
     
     // MARK: - Update
+    
+    func updateShurikenCount(_ count: Int) {
+        shurikenInt = count
+        shurikenCount.text = "\(shurikenInt)/10"
+    }
     
     func updateHealth(current: CGFloat, maxHP: CGFloat) {
         let ratio = maxHP > 0 ? (current / maxHP) : 0
@@ -327,14 +346,26 @@ class HUD: SKNode {
     }
     
     func updateWave(_ wave: Int) {
-        waveLabel.text = "Floor \(wave)"
+        let format = NSLocalizedString("pause_floor", comment: "")
+        let text = String(format: format, wave)
+        waveLabel.text = text
         countdownLabel.text = ""
         waveLabel.run(.sequence([.scale(to: 1.4, duration: 0.12), .scale(to: 1.0, duration: 0.12)]))
+        
+        if wave == 2{
+            GameCenterManager.shared.reportAchievement(id: "first_floor", percent: 100.0)
+        }else if wave == 5{
+            GameCenterManager.shared.reportAchievement(id: "fifth_floor", percent: 100.0)
+        }else if wave == 10{
+            GameCenterManager.shared.reportAchievement(id: "tenth_floor", percent: 100.0)
+        }
     }
     
     func showCountdown(_ seconds: Int) {
         if seconds > 0 {
-            countdownLabel.text = "Next floor in \(seconds)…"
+            let format = NSLocalizedString("countdown_label", comment: "")
+            let text = String(format: format, seconds)
+            countdownLabel.text = text
         } else {
             countdownLabel.text = ""
         }
@@ -365,7 +396,7 @@ class HUD: SKNode {
 
         setupVideoBackground(videoName: "pause_video", rootNode: root, size: self.screenSize)
 
-        let title = SKLabelNode(text: "Pause")
+        let title = SKLabelNode(text: NSLocalizedString("pause_title", comment: ""))
         title.fontName = "PressStart2P-Regular"
         title.fontSize = 22.36
         title.fontColor = .white
@@ -382,18 +413,18 @@ class HUD: SKNode {
         title2.zPosition = 1
         title2.horizontalAlignmentMode = .left
         root.addChild(title2)
-
+        
         let buttonSpacing: CGFloat = 16
         let buttonW: CGFloat = 200
         let leftAnchor: CGFloat = -341.25
-
+        
         let resumeBtn = makeOverlayButton(
-            text: "Resume",
-            pos: CGPoint(x: leftAnchor + buttonW / 2, y: -53.75),
+            text: "pause_resume",
+            pos: CGPoint(x: -262.25, y: -53.75),
             name: "resumeButton"
         )
         let exitBtn = makeOverlayButton(
-            text: "Exit",
+            text: "pause_exit",
             pos: CGPoint(x: leftAnchor + buttonW + buttonSpacing + buttonW / 2, y: -53.75),
             name: "menuFromPause"
         )
@@ -488,7 +519,7 @@ class HUD: SKNode {
         bg.zPosition = 0
         root.addChild(bg)
 
-        let title = SKLabelNode(text: "Game Over")
+        let title = SKLabelNode(text: NSLocalizedString("gameOver_title", comment: ""))
         title.fontName = "PressStart2P-Regular"
         title.fontSize = 67
         title.fontColor = .white
@@ -500,7 +531,7 @@ class HUD: SKNode {
         
         // Passando o asset "AD" aqui
         let continueBtn = makeOverlayButton(
-            text: "Continue",
+            text: "button_continue",
             pos: CGPoint(x: -210, y: -50),
             name: canShow ? "continueButton" : "continueDisabled",
             iconAssetName: "AD"
@@ -525,8 +556,8 @@ class HUD: SKNode {
         
         root.addChild(continueBtn)
         
-        root.addChild(makeOverlayButton(text: "Restart", pos: CGPoint(x: 0, y: -50), name: "restartButton"))
-        root.addChild(makeOverlayButton(text: "Menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
+        root.addChild(makeOverlayButton(text: "button_restart", pos: CGPoint(x: 0, y: -50), name: "restartButton"))
+        root.addChild(makeOverlayButton(text: "button_menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
         
         addChild(root)
         
@@ -553,7 +584,7 @@ class HUD: SKNode {
         
         let container = SKNode()
         
-        let lbl = SKLabelNode(text: text)
+        let lbl = SKLabelNode(text: NSLocalizedString(text, comment: ""))
         lbl.name = name
         lbl.fontName = "PressStart2P-Regular"
         lbl.fontSize = 11.75

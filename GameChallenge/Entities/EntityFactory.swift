@@ -459,6 +459,13 @@ class EntityFactory {
             let animateFrames = SKAction.animate(with: textures, timePerFrame: 0.15)
             
             node.run(.repeatForever(animateFrames))
+            
+        case .shuriken:
+            let textures = [
+                SKTexture(imageNamed: "joystick_shuriken")
+            ]
+            
+            node.texture = textures[0]
         }
         
         node.size = CGSize(width: 40, height: 40)
@@ -477,6 +484,8 @@ class EntityFactory {
             rarity = 0.1
         case .killAll:
             rarity = 0.02
+        case .shuriken:
+            rarity = 0.4
         }
         
         entity.add(ItemComponent(type: type, rarity: rarity))

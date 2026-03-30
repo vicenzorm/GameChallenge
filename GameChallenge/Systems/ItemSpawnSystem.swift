@@ -31,9 +31,10 @@ class ItemSpawnSystem {
         let type: ItemComponent.ItemType
         
         // Baseado na raridade que você quer
-        if rand < 0.1 { type = .killAll }        // 10% chance
-        else if rand < 0.4 { type = .specialCharge } // 30% chance
-        else { type = .healthPotion }            // 60% chance
+        if rand < 0.05 { type = .killAll }        // 10% chance
+        else if rand < 0.25 { type = .specialCharge } // 20% chance
+        else if rand < 0.50 { type = .healthPotion } // 50% chance
+        else { type = .shuriken }
         
         let x = CGFloat.random(in: -sceneSize.width/2 + 200 ... sceneSize.width/2 - 200)
         let y = CGFloat.random(in: -sceneSize.height/2 + 200 ... sceneSize.height/2 - 200)

@@ -93,10 +93,19 @@ class GameScene: SKScene {
     private var overlayTouchStartLocation: CGPoint = .zero
     private let overlayCancelDragThreshold: CGFloat = 20
     
+    private var isTutorial: Bool {
+        return !UserDefaults.standard.bool(forKey: "hasCompletedTutorial")
+    }
+    var tutorialState: TutorialState = .showingMovement
+    var movementOverlay: NextStepOnTutorialOverlay
+    var attackingOverlay: NextStepOnTutorialOverlay
+    
     override init(size: CGSize) {
-        //        pauseNode = Pause(size: size)
+        movementOverlay = NextStepOnTutorialOverlay(size: size, text: "Arraste o dedo pela metade esquerda da tela para se mover.")
+        attackingOverlay = NextStepOnTutorialOverlay(size: size, text: "Aproxime-se de um inimigo e clique para atacar.")
         super.init(size: size)
-        //        addChild(pauseNode)
+        shakeNode.addChild(movementOverlay)
+        shakeNode.addChild(attackingOverlay)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -154,12 +163,17 @@ class GameScene: SKScene {
         collisionSystem.onPlayerSpecialCharged = { [weak self] in
             self?.flashVignette(color: .cyan, intensity: 0.5, duration: 0.5)
         }
+        collisionSystem.onPickedShuriken = { [weak self] in
+            guard let pl = self?.playerEntity.get(PlayerComponent.self) else { return }
+            self?.hud.updateShurikenCount(pl.shurikenCount)
+        }
+        
         collisionSystem.onKillAllUsed = { [weak self] in
             guard let self else { return }
-
+            
             // ── Shake de explosão ─────────────────────────────────────
             self.shakeCamera(intensity: 18, duration: 0.5)
-
+            
             // ── Flash branco usando chave diferente do vignette ────────
             guard let v = self.vignetteNode else { return }
             v.removeAction(forKey: "killFlash")
@@ -185,7 +199,12 @@ class GameScene: SKScene {
         setupBoxes()
         setupWaveCallbacks()
         setupCoinCallbacks()
-        waveSystem.startNextWave(sceneSize: worldSize)
+        if isTutorial {
+            startTutorial()
+        } else  {
+            waveSystem.startNextWave(sceneSize: worldSize)
+        }
+        SoundManager.shared.playMusic(named: "gameMusic.mp3")
     }
     
     
@@ -194,6 +213,28 @@ class GameScene: SKScene {
     }
     
     // MARK: Setup
+    
+    private func startTutorial() {
+        let pos1 = CGPoint(x: 1000, y: 1000)
+        let ene = EntityFactory.makeEnemy(type: .weak, at: pos1, scene: self)
+        
+        if let mov = ene.get(MovementComponent.self) {
+            mov.speed = 0
+            mov.velocity = .zero
+        }
+        
+        enemyEntities.append(ene)
+        hud.updateWave(0)
+        hud.updateWaveProgress(0)
+        
+        movementOverlay.start()
+        
+        movementOverlay.onDismiss = { [weak self] in
+            guard let self = self , let playerNode = self.playerEntity.get(TransformComponent.self)?.node else { return }
+            
+            self.tutorialState = .waitingMovement(startPos: playerNode.position)
+        }
+    }
     
     private func setupVignette() {
         let vignette = SKSpriteNode(imageNamed: "vignette")  // veja nota abaixo
@@ -481,25 +522,31 @@ class GameScene: SKScene {
                             }
                         }
                         
-                        // Só atira se houver um inimigo próximo na tela (evita atirar no vazio)
-                        if let target = nearestEnemy, let targetNode = target.get(TransformComponent.self)?.node {
-                            vibrate(with: .light)
-                            attack.lastShotTime = currentTime
+                        if pl.shurikenCount > 0 {
                             
-                            // Calcula direção inicial
-                            let dx = targetNode.position.x - playerNode.position.x
-                            let dy = targetNode.position.y - playerNode.position.y
-                            let dist = hypot(dx, dy)
-                            let initialDir = dist > 0 ? CGVector(dx: dx/dist, dy: dy/dist) : CGVector(dx: 1, dy: 0)
-                            
-                            let projectile = EntityFactory.makeProjectile(
-                                at: playerNode.position,
-                                direction: initialDir,
-                                scene: self,
-                                target: target // Passa o alvo!
-                            )
-                            projectileEntities.append(projectile)
+                            // Só atira se houver um inimigo próximo na tela (evita atirar no vazio)
+                            if let target = nearestEnemy, let targetNode = target.get(TransformComponent.self)?.node {
+                                vibrate(with: .light)
+                                attack.lastShotTime = currentTime
+                                
+                                // Calcula direção inicial
+                                let dx = targetNode.position.x - playerNode.position.x
+                                let dy = targetNode.position.y - playerNode.position.y
+                                let dist = hypot(dx, dy)
+                                let initialDir = dist > 0 ? CGVector(dx: dx/dist, dy: dy/dist) : CGVector(dx: 1, dy: 0)
+                                
+                                let projectile = EntityFactory.makeProjectile(
+                                    at: playerNode.position,
+                                    direction: initialDir,
+                                    scene: self,
+                                    target: target // Passa o alvo!
+                                )
+                                projectileEntities.append(projectile)
+                                pl.shurikenCount -= 1
+                                hud.updateShurikenCount(pl.shurikenCount)
+                            }
                         }
+                        
                     }
                 }
             }
@@ -575,7 +622,8 @@ class GameScene: SKScene {
             // Para o movimento do inimigo morto
             d.get(MovementComponent.self)?.velocity = .zero
             // Trigga animação — nó será removido pelo EnemySystem ao terminar
-            enemySystem.triggerDeath(enemy: d)
+            let wasSpecial = playerEntity.get(SpriteComponent.self)?.isSpecialAttack ?? false
+            enemySystem.triggerDeath(enemy: d, wasSpecial: wasSpecial, player: playerEntity)
             waveSystem.registerEnemyKilled()   // ← conta o inimigo morto
             hud.updateWaveProgress(waveSystem.waveProgress)   // ← atualiza a barra
             dyingEnemies.append(d)   // ← move para lista de moribundos
@@ -592,8 +640,10 @@ class GameScene: SKScene {
         let deadBoxes = boxEntities.filter { $0.get(HealthComponent.self)?.isAlive == false }
         for box in deadBoxes {
             if let node = box.get(TransformComponent.self)?.node {
+                maybeDropItem(at: node.position)
                 node.run(.sequence([
                     .scale(to: 0.1, duration: 0.15),
+                    //                    SoundManager.shared.play(SoundManager.shared.boxDestruction)
                     .removeFromParent()
                 ]))
             }
@@ -633,7 +683,7 @@ class GameScene: SKScene {
             waveSystem.update(deltaTime: dt, activeEnemies: enemyEntities.count,
                               sceneSize: worldSize, playerPosition: node.position)
         }
-        coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
+        //coinSpawnSystem.update(deltaTime: dt, activeCoins: coinEntities.count, sceneSize: worldSize)
         
         // 15. Item spawn
         itemSpawnSystem.update(
@@ -662,6 +712,51 @@ class GameScene: SKScene {
             )
         }
         
+        if isTutorial {
+            checkTutorialProgress()
+        }
+        
+    }
+    
+    private func checkTutorialProgress() {
+        guard let playerNode = playerEntity.get(TransformComponent.self)?.node else { return }
+        
+        switch tutorialState {
+        case .showingMovement:
+            print("esta mostrando como se movimentar")
+        case .waitingMovement(let startPos):
+            print("player esta se movimentando")
+            let distanceWalked = playerNode.position.distance(to: startPos)
+            
+            if distanceWalked >= 300 {
+                tutorialState = .showingAttack
+                
+                attackingOverlay.start()
+                
+                attackingOverlay.onDismiss = { [weak self] in
+                    guard let self = self else { return }
+                    
+                    self.tutorialState = .combatPractice
+                    
+                    for enemy in self.enemyEntities {
+                        if let mov = enemy.get(MovementComponent.self) {
+                            mov.speed = 120
+                        }
+                    }
+                }
+            }
+        case .showingAttack:
+            print("esta mostrando como atacar")
+            
+        case .combatPractice:
+            print("player esta atacando")
+            if enemyEntities.isEmpty && dyingEnemies.isEmpty {
+                tutorialState = .finished
+            }
+        case .finished:
+            print("acabou")
+            UserDefaults.standard.set(true, forKey: "hasCompletedTutorial")
+        }
     }
     
     private func isPositionClear(_ pos: CGPoint, minDistance: CGFloat) -> Bool {
@@ -716,6 +811,8 @@ class GameScene: SKScene {
         }
         enemyEntities.removeAll()
         
+        SoundManager.shared.playMusic(named: "levelUpMusic.mp3", loop: false)
+        
         guard let view = self.view else { return }
         
         let cp = CutscenePlayer()
@@ -725,6 +822,8 @@ class GameScene: SKScene {
             self.cutscenePlayer          = nil
             self.isPausedByPlayer        = false
             self.movementJoystick.isHidden = false
+            // vai tocar de novo ao inves de loop?
+            SoundManager.shared.playMusic(named: "gameMusic.mp3")
             self.waveSystem.startNextWave(sceneSize: self.worldSize)
         }
     }
@@ -739,7 +838,7 @@ class GameScene: SKScene {
     /// Randomly drops a coin at the specified position with a 1 in 3 chance.
     private func maybeDropCoin(at pos: CGPoint) {
         guard Int.random(in: 0..<3) == 0 else { return }
-        coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
+        //coinEntities.append(EntityFactory.makeCoin(at: pos, scene: self))
     }
     
     /// Randomly drops a consumable at the specified position.
@@ -753,7 +852,8 @@ class GameScene: SKScene {
         let type: ItemComponent.ItemType
         if roll < 0.05 { type = .killAll }
         else if roll < 0.15 { type = .specialCharge }
-        else { type = .healthPotion }
+        else if roll < 0.25 { type = .healthPotion}
+        else { type = .shuriken }
         
         let item = EntityFactory.makeConsumable(type: type, at: pos, scene: self)
         addItemEntity(item)
@@ -761,7 +861,9 @@ class GameScene: SKScene {
     
     /// Displays a wave banner at the center of the screen.
     private func showWaveBanner(wave: Int) {
-        let lbl = SKLabelNode(text: "FLOOR \(wave)")
+        let format = NSLocalizedString("wave_banner", comment: "")
+        let text = String(format: format, waveSystem.currentWave)
+        let lbl = SKLabelNode(text: text)
         lbl.fontName  = AppManager.shared.secondaryFont
         lbl.fontSize  = 32
         lbl.fontColor = .white
@@ -781,10 +883,10 @@ class GameScene: SKScene {
     private func triggerGameOver() {
         guard !isPausedByPlayer else { return }
         isPausedByPlayer = true
-        let currentFloor = waveSystem.currentWave
-        GameCenterManager.shared.submitScore(floor: (currentFloor))
+        GameCenterManager.shared.submitScore(floor: waveSystem.currentWave)
         movementJoystick.isHidden = true
         movementJoystick.isUserInteractionEnabled = false
+        SoundManager.shared.playMusic(named: "gameOverMusic.mp3", loop: false)
         hud.showGameOver()
     }
     
@@ -860,7 +962,7 @@ class GameScene: SKScene {
             waveSystem.registerEnemyKilled()
             // Trigga animação de morte em vez de remover direto
             enemy.get(MovementComponent.self)?.velocity = .zero
-            enemySystem.triggerDeath(enemy: enemy)
+            enemySystem.triggerDeath(enemy: enemy, wasSpecial: true, player: playerEntity)
             dyingEnemies.append(enemy)
         }
         enemyEntities.removeAll()
@@ -897,6 +999,9 @@ class GameScene: SKScene {
             // remove game over
             self.hud.hideGameOver()
             
+            SoundManager.shared.playMusic(named: "gameMusic.mp3")
+            self.isPausedByPlayer = false
+            
             // retoma jogo
             
             self.clearEnemiesAroundPlayer()
@@ -913,47 +1018,47 @@ class GameScene: SKScene {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let view else { return }
-
+        
         for touch in touches {
             let loc      = touch.location(in: cameraNode)
             let hitNodes = cameraNode.nodes(at: loc)
             var hitUI    = false
-
+            
             for node in hitNodes {
                 guard let nodeName = node.name else { continue }
-
+                
                 switch nodeName {
                 case "buttonA":
                     vibrate(with: .light)
                     inputSystem.attackPressed = true
                     (node as? SKSpriteNode)?.alpha = 0.7
                     hitUI = true
-
+                    
                 case "buttonB":
                     vibrate(with: .light)
                     inputSystem.specialPressed = true
                     (node as? SKSpriteNode)?.alpha = 0.7
                     hitUI = true
-
+                    
                 case "buttonC":
                     inputSystem.shootPressed = true
                     (node as? SKSpriteNode)?.alpha = 0.7
                     hitUI = true
-
+                    
                 case "leaderboardButton":
                     SoundManager.shared.play(SoundManager.shared.button, on: node)
                     vibrate(with: .light)
                     GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
                     hitUI = true
-
+                    
                 case "pauseButton":
                     SoundManager.shared.play(SoundManager.shared.button, on: node)
                     vibrate(with: .light)
                     node.springTap { self.togglePause() }
                     hitUI = true
-
+                    
                 case "resumeButton", "menuFromPause",
-                     "continueButton", "restartButton", "menuFromGameOver":
+                    "continueButton", "restartButton", "menuFromGameOver":
                     // Inicia tracking — ação só dispara no touchesEnded
                     if trackedOverlayTouch == nil {
                         trackedOverlayTouch         = touch
@@ -967,14 +1072,14 @@ class GameScene: SKScene {
                         vibrate(with: .light)
                     }
                     hitUI = true
-
+                    
                 default:
                     break
                 }
-
+                
                 if hitUI { break }
             }
-
+            
             if !hitUI && loc.x < 0 && !isPausedByPlayer {
                 movementJoystick.injectTouchBegan(touch, in: cameraNode)
             }
@@ -985,7 +1090,7 @@ class GameScene: SKScene {
         if !isPausedByPlayer {
             movementJoystick.injectTouchesMoved(touches, in: cameraNode)
         }
-
+        
         // Cancela overlay button se arrastou longe
         if let tracked = trackedOverlayTouch, touches.contains(tracked) {
             let loc = tracked.location(in: cameraNode)
@@ -999,7 +1104,7 @@ class GameScene: SKScene {
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         movementJoystick.injectTouchesEnded(touches, in: cameraNode)
-
+        
         // Restore game buttons alpha
         for touch in touches {
             let loc = touch.location(in: cameraNode)
@@ -1009,14 +1114,14 @@ class GameScene: SKScene {
                 }
             }
         }
-
+        
         // Overlay button — confirma ação
         guard let tracked = trackedOverlayTouch, touches.contains(tracked) else { return }
         defer { clearOverlayTracking() }
-
+        
         guard let name = trackedOverlayName,
               let node = trackedOverlayNode else { return }
-
+        
         // Bounce de saída
         node.removeAction(forKey: "springTap")
         let bounce = SKAction.scale(to: 1.12, duration: 0.10)
@@ -1024,17 +1129,17 @@ class GameScene: SKScene {
         let settle = SKAction.scale(to: 1.0, duration: 0.10)
         settle.timingMode = .easeInEaseOut
         node.run(.sequence([bounce, settle]), withKey: "springTap")
-
+        
         switch name {
         case "resumeButton":
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                 self?.togglePause()
             }
-
+            
         case "continueButton":
             guard let view else { return }
             handleContinue(view: view)
-
+            
         case "restartButton", "menuFromGameOver", "menuFromPause":
             run(SKAction.playSoundFileNamed("button.wav", waitForCompletion: false))
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
@@ -1042,7 +1147,7 @@ class GameScene: SKScene {
                 guard let view else { return }
                 self.handleMenuNavigation(nodeName: name, view: view)
             }
-
+            
         default:
             break
         }
@@ -1050,22 +1155,22 @@ class GameScene: SKScene {
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         movementJoystick.injectTouchesEnded(touches, in: cameraNode)
-
+        
         inputSystem.attackPressed  = false
         inputSystem.specialPressed = false
         inputSystem.shootPressed   = false
-
+        
         if let buttons = cameraNode?.children.filter({ ["buttonA","buttonB","buttonC"].contains($0.name) }) {
             buttons.forEach { ($0 as? SKSpriteNode)?.alpha = 1.0 }
         }
-
+        
         if let tracked = trackedOverlayTouch, touches.contains(tracked) {
             cancelOverlayButton()
         }
     }
     
     // MARK: - Overlay Button Tracking Helpers
-
+    
     private func cancelOverlayButton() {
         trackedOverlayNode?.removeAction(forKey: "springTap")
         let restore = SKAction.scale(to: 1.0, duration: 0.12)
@@ -1073,7 +1178,7 @@ class GameScene: SKScene {
         trackedOverlayNode?.run(restore, withKey: "springTap")
         clearOverlayTracking()
     }
-
+    
     private func clearOverlayTracking() {
         trackedOverlayTouch = nil
         trackedOverlayNode  = nil
@@ -1106,4 +1211,13 @@ private extension Comparable {
     func clamped(to range: ClosedRange<Self>) -> Self {
         Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
+}
+
+
+enum TutorialState {
+    case showingMovement
+    case waitingMovement(startPos: CGPoint)
+    case showingAttack
+    case combatPractice
+    case finished
 }

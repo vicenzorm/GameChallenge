@@ -123,20 +123,49 @@ class EnemySystem {
     }
 
     /// Chame quando o inimigo morrer
-    func triggerDeath(enemy: Entity) {
-        if let sc = enemy.get(SkeletonSpriteComponent.self) {
-            guard !sc.deathStarted else { return }
-            sc.deathStarted = true
-            sc.isPlayingOneShot = true
-            sc.state = .die
-            sc.currentFrame = 0
-        } else if let ec = enemy.get(EnemySpriteComponent.self) {
-            guard !ec.deathStarted else { return }
-            ec.deathStarted = true
-            ec.state = .death
-            ec.currentFrame = 0
+    /// Chame quando o inimigo morrer
+        func triggerDeath(enemy: Entity, wasSpecial: Bool, player: Entity?) {
+            // 1. Evita processar a morte duas vezes
+            let isSkeleton = enemy.get(SkeletonSpriteComponent.self) != nil
+            if isSkeleton {
+                guard let sc = enemy.get(SkeletonSpriteComponent.self), !sc.deathStarted else { return }
+                sc.deathStarted = true
+                sc.isPlayingOneShot = true
+                sc.state = .die
+                sc.currentFrame = 0
+            } else if let ec = enemy.get(EnemySpriteComponent.self) {
+                guard !ec.deathStarted else { return }
+                ec.deathStarted = true
+                ec.state = .death
+                ec.currentFrame = 0
+            }
+
+            // 2. Lógica de Recompensa (Kill Streak / Especial)
+            if !wasSpecial {
+                if let playerComp = player?.get(PlayerComponent.self),
+                   let enemyComp = enemy.get(EnemyComponent.self) {
+                    playerComp.killStreak += enemyComp.type.specialPoints
+                }
+            }
+
+            // 3. Persistência de Kills Totais (Achievements 50/100)
+            updatePersistentKills()
         }
-    }
+
+        private func updatePersistentKills() {
+            let totalKills = UserDefaults.standard.integer(forKey: "totalKills") + 1
+            UserDefaults.standard.set(totalKills, forKey: "totalKills")
+
+            // Report progress (not only exact thresholds), so it still works
+            // if the player authenticates after crossing 50/100.
+            let fiftyPct = min(100.0, (Double(totalKills) / 50.0) * 100.0)
+            GameCenterManager.shared.reportAchievement(id: "fifty_kills", percent: fiftyPct)
+
+            let hundredPct = min(100.0, (Double(totalKills) / 100.0) * 100.0)
+            // Try both IDs to match whatever was configured in App Store Connect.
+            GameCenterManager.shared.reportAchievement(id: "hundred_kills", percent: hundredPct)
+            GameCenterManager.shared.reportAchievement(id: "100_kills", percent: hundredPct)
+        }
 
     /// Chame quando o skeleton colidir com o player
     func triggerSkeletonAtk(enemy: Entity) {
