@@ -1,96 +1,89 @@
 # 🏰 Zenith, the Endless Tower
 
-**Ascenda, lute e sobreviva até o topo!**
+**Ascend, fight, and survive to the top!**
 
-Zenith é um jogo indie de ação *top-down* focado em sobrevivência e combate. Desenvolvido nativamente para o ecossistema Apple utilizando **SpriteKit** e **GameplayKit**, o projeto adota a arquitetura **ECS (Entity-Component-System)** para garantir um código modular, escalável e de alta performance. 
+Zenith is a top-down indie action game focused on survival and combat. Natively developed for the Apple ecosystem using **SpriteKit** and **GameplayKit**, the project adopts the **ECS (Entity-Component-System)** architecture to ensure a modular, scalable, and high-performance codebase.
 
-Fortemente inspirado na estrutura de salas e progressão do clássico *The Binding of Isaac*, Zenith traz uma reviravolta ao focar intensamente no combate de curta distância com ataques físicos e mecânicas dinâmicas de colisão. Todos os assets utilizados no projeto são *open source*.
+Heavily inspired by the room structure and progression of the classic *The Binding of Isaac*, Zenith brings a twist by focusing intensely on close-range combat with physical attacks and dynamic collision mechanics. All assets used in the project are *open source*.
 
-## 🎮 Gameplay & Mecânicas
+## 🎮 Gameplay & Mechanics
 
-* **Objetivo:** Sobreviva às hordas de inimigos, limpe o andar e encontre a saída para subir a torre. Tente chegar ao andar mais alto que conseguir!
-* **Combate Dinâmico:** Domine o espaço ao seu redor utilizando ataques físicos brutais corpo a corpo, gerenciando o tempo de recarga e o posicionamento para evitar danos.
-* **Progressão Infinita:** A dificuldade aumenta gradativamente a cada novo andar da torre. Inimigos mais fortes, mais rápidos e em maior número tentarão impedir sua ascensão.
-* **Arquitetura ECS:** Tudo no jogo — de jogadores a inimigos e projéteis — é uma Entidade. Habilidades, saúde e movimento são Componentes modulares, processados por Sistemas do GameplayKit.
+* **Objective:** Survive the enemy hordes, clear the floor, and find the exit to ascend the tower. Try to reach the highest floor you can!
+* **Dynamic Combat:** Master the space around you using brutal physical melee attacks, managing cooldowns and positioning to avoid taking damage.
+* **Infinite Progression:** The difficulty gradually increases with each new floor of the tower. Stronger, faster, and more numerous enemies will try to stop your ascent.
+* **ECS Architecture:** Everything in the game — from players to enemies and projectiles — is an Entity. Abilities, health, and movement are modular Components, processed by GameplayKit Systems.
 
-## ⚒️ Guia para Desenvolvedores
+## ⚒️ Developer Guide
 
-Este repositório segue boas práticas de desenvolvimento colaborativo. Antes de contribuir, atente-se às orientações abaixo.
+This repository follows collaborative development best practices. Before contributing, please pay attention to the guidelines below.
 
-### 0. Idioma
+### 0. Language
 
-O idioma de mensagens de commit ou dos nomes para as branches devem **SEMPRE** estar em **inglês**.
+The language for commit messages or branch names MUST **ALWAYS** be in **English**.
 
-### 1. Organização de Branches
+### 1. Branch Organization
 
-* `main`: branch estável, sempre pronta para deploy.
-* `dev`: branch de integração, onde as features são testadas antes de irem para `main`.
-* `feat-TK<numero-da-task>/<nome-da-feature>`: novas funcionalidades e novos componentes ECS.
-* `fix/<nome-do-bug>`: correções de bugs.
-* `hotfix/<nome-do-hotfix>`: correções urgentes que devem ir direto para produção.
-* `test/<nome-do-teste>`: experimentos ou provas de conceito.
+* `main`: Stable branch, always ready for deployment.
+* `dev`: Integration branch, where features are tested before going to `main`.
+* `feat-TK<task-number>/<feature-name>`: New features and new ECS components.
+* `fix/<bug-name>`: Bug fixes.
+* `hotfix/<hotfix-name>`: Urgent fixes that must go straight to production.
+* `test/<test-name>`: Experiments or proofs of concept.
 
-⚠️ **Nunca** faça commits diretamente em `main` ou `dev`.
+⚠️ **Never** commit directly to `main` or `dev`.
 
-### 2. Mensagens de Commit
+### 2. Commit Messages
 
-As mensagens de commit devem ser claras, concisas e no **imperativo presente** (como se fossem instruções).
+Commit messages must be clear, concise, and in the **present imperative** (as if they were commands).
 
-**Formato recomendado:** `<tipo>: <descrição curta>`
+**Recommended format:** `<type>: <short description>`
 
-**Tipos mais comuns:**
-* `feat`: nova funcionalidade (ex: novos inimigos, sistemas do GameplayKit).
-* `fix`: correção de bug.
-* `docs`: mudanças em documentação.
-* `style`: formatação (sem alteração de código).
-* `refactor`: refatoração de código (sem mudar comportamento, ex: otimização de um Component).
-* `test`: adição ou modificação de testes.
-* `chore`: manutenção, dependências, configs de assets, etc.
+**Most common types:**
+* `feat`: New feature (e.g., new enemies, GameplayKit systems).
+* `fix`: Bug fix.
+* `docs`: Changes to documentation.
+* `style`: Formatting (no code changes).
+* `refactor`: Code refactoring (without changing behavior, e.g., optimizing a Component).
+* `test`: Adding or modifying tests.
+* `chore`: Maintenance, dependencies, asset configs, etc.
 
-✅ **Exemplos:**
+✅ **Examples:**
 * `feat: add melee attack component to player entity`
 * `fix: collision detection on enemy spawn`
-* `docs: att README with ECS architecture`
+* `docs: update README with ECS architecture`
 
-❌ **Evite commits vagos como:**
-* `ajustes no combate`
-* `update inimigos`
-* `testes na torre`
+❌ **Avoid vague commits like:**
+* `combat adjustments`
+* `update enemies`
+* `tower tests`
 
-### 3. Testes
+### 3. Tests
 
-Os testes são parte fundamental para garantir a qualidade e a estabilidade da arquitetura do jogo. Antes de abrir um PR, **rode todos os testes locais** e certifique-se de que estão passando.
+Tests are a fundamental part of ensuring the quality and stability of the game's architecture. Before opening a PR, **run all local tests** and make sure they pass.
 
-Use o framework de **Testing** padrão da Apple para escrever casos de teste.
+Use Apple's default **Testing** framework to write test cases.
 
-**Testes devem cobrir:**
-* Lógica de cálculo de dano, vida (HealthComponent) e morte das entidades.
-* Integrações críticas de ECS (garantir que os Systems processam os Components corretamente a cada *update frame*).
-* Lógica de geração de andares e *spawn* de inimigos.
+**Tests must cover:**
+* Damage calculation logic, health (`HealthComponent`), and entity death.
+* Critical ECS integrations (ensure Systems process Components correctly every *update frame*).
+* Floor generation and enemy spawn logic.
 
-📌 *Pull requests sem cobertura mínima de testes lógicos serão rejeitados.*
+📌 *Pull requests without minimum logical test coverage will be rejected.*
 
 ### 4. Pull Requests (PRs)
 
-Os PRs devem ser pequenos, objetivos e com descrição clara do que está sendo alterado.
+PRs should be small, objective, and have a clear description of what is being changed.
 
-**Antes de abrir um PR:**
-Certifique-se de que sua branch está atualizada com `dev`
+**Before opening a PR:**
+* Make sure your branch is up to date with `dev`.
+* Review your code locally (check for memory leaks with SpriteKit textures!).
+* Run the tests and ensure they all pass.
+* Describe what was done and the reason for the change.
 
-Revise seu código localmente (verifique memory leaks com texturas do SpriteKit!).
+**PR Checklist:**
 
-Rode os testes e garanta que todos passam.
-
-Descreva o que foi feito e o motivo da mudança.
-
-Checklist para PR:
-
-[ ] Código testado localmente
-
-[ ] Testes criados/atualizados
-
-[ ] Assets open source devidamente creditados (se aplicável)
-
-[ ] Documentação ajustada (se necessário)
-
-[ ] Sem conflitos com a dev
+- [ ] Code tested locally
+- [ ] Tests created/updated
+- [ ] Open source assets properly credited (if applicable)
+- [ ] Documentation adjusted (if necessary)
+- [ ] No conflicts with `dev`
