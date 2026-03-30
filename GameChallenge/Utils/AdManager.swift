@@ -34,8 +34,8 @@ class AdManager {
         let request = Request()
 
         RewardedAd.load(
-//            with: "ca-app-pub-3220772225574627/7610942105",
-            with: "ca-app-pub-3940256099942544/1712485313",
+            with: "ca-app-pub-3220772225574627/7610942105",
+//            with: "ca-app-pub-3940256099942544/1712485313",
             request: request
         ) { ad, error in
             

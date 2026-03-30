@@ -87,7 +87,7 @@ class MenuScene: SKScene {
     }
     
     func makeTitle() {
-        zenithLabel = SKLabelNode(text: "zenith")
+        zenithLabel = SKLabelNode(text: "zenyth")
         zenithLabel.fontName = AppManager.shared.appFont
         zenithLabel.fontSize = 220
         zenithLabel.color = .white
