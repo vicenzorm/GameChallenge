@@ -1,10 +1,10 @@
-# 🏰 Zenith, the Endless Tower
+# 🏰 Zenyth, the Endless Tower
 
 **Ascend, fight, and survive to the top!**
 
-Zenith is a top-down indie action game focused on survival and combat. Natively developed for the Apple ecosystem using **SpriteKit** and **GameplayKit**, the project adopts the **ECS (Entity-Component-System)** architecture to ensure a modular, scalable, and high-performance codebase.
+Zenyth is a top-down indie action game focused on survival and combat. Natively developed for the Apple ecosystem using **SpriteKit** and **GameplayKit**, the project adopts the **ECS (Entity-Component-System)** architecture to ensure a modular, scalable, and high-performance codebase.
 
-Heavily inspired by the room structure and progression of the classic *The Binding of Isaac*, Zenith brings a twist by focusing intensely on close-range combat with physical attacks and dynamic collision mechanics. All assets used in the project are *open source*.
+Heavily inspired by the room structure and progression of the classic *The Binding of Isaac*, Zenyth brings a twist by focusing intensely on close-range combat with physical attacks and dynamic collision mechanics. All assets used in the project are *open source*.
 
 ## 🎮 Gameplay & Mechanics
 
