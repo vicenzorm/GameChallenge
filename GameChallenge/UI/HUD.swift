@@ -30,10 +30,11 @@ class HUD: SKNode {
     // Overlay nodes (created on demand)
     private var pauseOverlay:   SKNode?
     private var gameOverOverlay: SKNode?
-    
+    private var gameOverButtonsEnabled = false
+
     private let barMaxW: CGFloat = 160
     private let screenSize: CGSize
-    
+
     private var continueLabel: SKLabelNode?
     private var continueButtonNode: SKSpriteNode?
 
@@ -505,10 +506,12 @@ class HUD: SKNode {
     }
     
     // MARK: - Game Over Overlay
-    
+
     func showGameOver() {
-        
+
         guard gameOverOverlay == nil else { return }
+        gameOverButtonsEnabled = false
+        
         let root = SKNode();
         root.alpha = 0
         root.zPosition = 200
@@ -528,7 +531,7 @@ class HUD: SKNode {
         root.addChild(title)
 
         let canShow = AdManager.shared.canShowAd()
-        
+
         // Passando o asset "AD" aqui
         let continueBtn = makeOverlayButton(
             text: "button_continue",
@@ -536,7 +539,7 @@ class HUD: SKNode {
             name: canShow ? "continueButton" : "continueDisabled",
             iconAssetName: "AD"
         )
-        
+
         continueButtonNode = continueBtn as? SKSpriteNode
         continueLabel = firstLabel(in: continueBtn)
         let continueIcon = firstIcon(in: continueBtn)
@@ -545,24 +548,62 @@ class HUD: SKNode {
             // Aplica o cinza total que a gente configurou (Shader ou Alpha)
             continueButtonNode?.color = .gray
             continueButtonNode?.colorBlendFactor = 1
-            
+
             continueLabel?.fontColor = .gray
             continueLabel?.alpha = 0.3
-            
+
             continueIcon?.color = .gray
             continueIcon?.colorBlendFactor = 1.0
             continueIcon?.alpha = 0.3
         }
-        
+
         root.addChild(continueBtn)
+
+        let restartBtn = makeOverlayButton(text: "button_restart", pos: CGPoint(x: 0, y: -50), name: "restartButton")
+        let menuBtn = makeOverlayButton(text: "button_menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver")
         
-        root.addChild(makeOverlayButton(text: "button_restart", pos: CGPoint(x: 0, y: -50), name: "restartButton"))
-        root.addChild(makeOverlayButton(text: "button_menu", pos: CGPoint(x: 210, y: -50), name: "menuFromGameOver"))
+        // Start buttons dimmed
+        setButtonsAlpha([continueBtn, restartBtn, menuBtn], alpha: 0.5)
         
+        root.addChild(restartBtn)
+        root.addChild(menuBtn)
+
         addChild(root)
-        
+
+        // Fade in the overlay
         let fadeIn = SKAction.fadeIn(withDuration: 0.5)
         root.run(fadeIn)
+        
+        // Delay before enabling buttons (0.8s after fade-in completes)
+        let delay = SKAction.wait(forDuration: 0.8)
+        let enableAction = SKAction.run { [weak self] in
+            self?.enableGameOverButtons([continueBtn, restartBtn, menuBtn])
+        }
+        root.run(SKAction.sequence([delay, enableAction]))
+    }
+    
+    private func setButtonsAlpha(_ buttons: [SKNode], alpha: CGFloat) {
+        for button in buttons {
+            guard let sprite = button as? SKSpriteNode else { continue }
+            sprite.alpha = alpha
+            // Also fade child elements
+            sprite.enumerateChildNodes(withName: "*") { child, _ in
+                child.alpha = alpha
+            }
+        }
+    }
+    
+    private func enableGameOverButtons(_ buttons: [SKNode]) {
+        gameOverButtonsEnabled = true
+        for button in buttons {
+            guard let sprite = button as? SKSpriteNode else { continue }
+            // Fade to full alpha
+            let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.3)
+            sprite.run(fadeIn)
+            sprite.enumerateChildNodes(withName: "*") { child, _ in
+                child.run(SKAction.fadeAlpha(to: 1.0, duration: 0.3))
+            }
+        }
     }
     
     func hideGameOver() {
@@ -570,20 +611,25 @@ class HUD: SKNode {
         gameOverOverlay = nil
         continueButtonNode = nil
         continueLabel = nil
+        gameOverButtonsEnabled = false
+    }
+    
+    func isGameOverButtonsEnabled() -> Bool {
+        return gameOverButtonsEnabled
     }
 
     private func makeOverlayButton(text: String, pos: CGPoint, name: String, iconAssetName: String? = nil) -> SKNode {
         let backgroundTexture = SKTexture(imageNamed: "buttonBackground")
         let bg = SKSpriteNode(texture: backgroundTexture)
-        
+
         // Padding mantido como você gostou
         bg.size = CGSize(width: 160 + 40, height: 40 + 10)
         bg.zPosition = 1
         bg.position = pos
         bg.name = name
-        
+
         let container = SKNode()
-        
+
         let lbl = SKLabelNode(text: NSLocalizedString(text, comment: ""))
         lbl.name = name
         lbl.fontName = "PressStart2P-Regular"
@@ -591,32 +637,35 @@ class HUD: SKNode {
         lbl.fontColor = .white
         lbl.verticalAlignmentMode = .center
         lbl.horizontalAlignmentMode = .left
-        
+        lbl.isUserInteractionEnabled = false
+
         if let assetName = iconAssetName {
             // --- MUDANÇA AQUI: Carrega o asset direto ---
             let icon = SKSpriteNode(imageNamed: assetName)
             icon.name = name
-            
+            icon.isUserInteractionEnabled = false
+
             // Ajuste o tamanho do ícone "AD" conforme necessário
             icon.size = CGSize(width: 25, height: 25)
-            
+
             let spacing: CGFloat = 8
             let totalWidth = icon.size.width + spacing + lbl.frame.width
             let startX = -totalWidth / 2
-            
+
             icon.position = CGPoint(x: startX + icon.size.width / 2, y: 0)
             lbl.position = CGPoint(x: startX + icon.size.width + spacing, y: 0)
-            
+
             container.addChild(icon)
         } else {
             lbl.horizontalAlignmentMode = .center
             lbl.position = .zero
         }
-        
+
         container.addChild(lbl)
         container.zPosition = 2
+        container.isUserInteractionEnabled = false
         bg.addChild(container)
-        
+
         return bg
     }
     

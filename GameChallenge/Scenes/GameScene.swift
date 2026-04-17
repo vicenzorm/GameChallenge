@@ -1015,60 +1015,75 @@ class GameScene: SKScene {
     }
     
     // MARK: Touch Handling
-    
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let view else { return }
-        
+
         for touch in touches {
             let loc      = touch.location(in: cameraNode)
             let hitNodes = cameraNode.nodes(at: loc)
             var hitUI    = false
-            
+
             for node in hitNodes {
                 guard let nodeName = node.name else { continue }
                 
+                // For overlay buttons, ensure we use the button background (SKSpriteNode), not child nodes
+                let buttonNode: SKNode
+                if node is SKSpriteNode {
+                    buttonNode = node
+                } else if let parentSprite = node.parent as? SKSpriteNode {
+                    buttonNode = parentSprite
+                } else {
+                    buttonNode = node
+                }
+
                 switch nodeName {
                 case "buttonA":
                     vibrate(with: .light)
                     inputSystem.attackPressed = true
                     (node as? SKSpriteNode)?.alpha = 0.7
                     hitUI = true
-                    
+
                 case "buttonB":
                     vibrate(with: .light)
                     inputSystem.specialPressed = true
                     (node as? SKSpriteNode)?.alpha = 0.7
                     hitUI = true
-                    
+
                 case "buttonC":
                     inputSystem.shootPressed = true
                     (node as? SKSpriteNode)?.alpha = 0.7
                     hitUI = true
-                    
+
                 case "leaderboardButton":
                     SoundManager.shared.play(SoundManager.shared.button, on: node)
                     vibrate(with: .light)
                     GameCenterManager.shared.showLeaderboard(from: view.window?.rootViewController)
                     hitUI = true
-                    
+
                 case "pauseButton":
                     SoundManager.shared.play(SoundManager.shared.button, on: node)
                     vibrate(with: .light)
                     node.springTap { self.togglePause() }
                     hitUI = true
-                    
+
                 case "resumeButton", "menuFromPause",
                     "continueButton", "restartButton", "menuFromGameOver":
+                    // Check if gameOver buttons are enabled (to prevent misclicks)
+                    if ["continueButton", "restartButton", "menuFromGameOver"].contains(nodeName),
+                       !hud.isGameOverButtonsEnabled() {
+                        break
+                    }
                     // Inicia tracking — ação só dispara no touchesEnded
                     if trackedOverlayTouch == nil {
                         trackedOverlayTouch         = touch
-                        trackedOverlayNode          = node
+                        trackedOverlayNode          = buttonNode
                         trackedOverlayName          = nodeName
                         overlayTouchStartLocation   = loc
                         // Press down
-                        node.removeAction(forKey: "springTap")
-                        node.run(.scale(to: 0.82, duration: 0.08), withKey: "springTap")
-                        SoundManager.shared.play(SoundManager.shared.button, on: node)
+                        buttonNode.removeAction(forKey: "springTap")
+                        buttonNode.run(.scale(to: 0.82, duration: 0.08), withKey: "springTap")
+                        SoundManager.shared.play(SoundManager.shared.button, on: buttonNode)
                         vibrate(with: .light)
                     }
                     hitUI = true

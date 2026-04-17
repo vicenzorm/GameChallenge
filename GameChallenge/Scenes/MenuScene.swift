@@ -87,11 +87,11 @@ class MenuScene: SKScene {
     }
     
     func makeTitle() {
-        zenithLabel = SKLabelNode(text: "zenyth")
+        zenithLabel = SKLabelNode(text: "everestche")
         zenithLabel.fontName = AppManager.shared.appFont
-        zenithLabel.fontSize = 220
+        zenithLabel.fontSize = 140
         zenithLabel.color = .white
-        zenithLabel.position = CGPoint(x: size.width/2 + 130, y: size.height/2 - 90)
+        zenithLabel.position = CGPoint(x: size.width/2 + 130, y: size.height/2 - 70)
         addChild(zenithLabel)
         
         secondaryLabel = SKLabelNode(text: NSLocalizedString("title_sub", comment: "Subtitle"))
